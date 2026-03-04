@@ -25,6 +25,10 @@ Each framework has a detailed guide — refer to the links below rather than try
 
 ## Key differences by framework
 
+> **⚠️ CRITICAL — Debug identity required for Windows APIs:** If your app uses **any** Windows API that requires package identity (push notifications, background tasks, share target, startup tasks, Windows AI APIs, etc.), you **must** register debug identity after building and before launching the app. Without this, APIs will silently fail or throw errors at runtime.
+> - **Electron:** `npx winapp node add-electron-debug-identity`
+> - **All other frameworks:** `winapp create-debug-identity <path-to-exe>`
+
 ### Electron (npm package)
 Use the **npm package** (`@Microsoft/WinAppCli`), **not** the standalone CLI. The npm package includes:
 - The native winapp CLI binary bundled inside `node_modules`
@@ -36,7 +40,7 @@ Quick start:
 npm install --save-dev @microsoft/winappcli
 npx winapp init --use-defaults
 npx winapp node create-addon --template cs   # create a C# native addon
-npx winapp node add-electron-debug-identity  # register identity for debugging
+npx winapp node add-electron-debug-identity  # register identity for debugging — REQUIRED before testing identity-dependent APIs
 ```
 
 Additional Electron guides:

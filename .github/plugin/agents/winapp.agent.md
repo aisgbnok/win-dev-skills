@@ -64,6 +64,10 @@ Does the project already have an appxmanifest.xml?
 
 8. **Run `winapp --cli-schema` for the full CLI reference.** If you need exact option names, defaults, argument types, or details about any command, run `winapp --cli-schema` — it outputs the complete CLI structure as JSON. Use this whenever the information in this file isn't sufficient.
 
+9. **All apps MUST have debug identity registered before testing Windows APIs that require package identity.** When adding any Windows API that requires package identity (push notifications, background tasks, share target, startup tasks, Windows AI APIs, etc.), you **must** register debug identity after building the app and before launching it. Without this step, the APIs will fail at runtime because the app process lacks package identity. Always include this step in your workflow — do not assume the user will add it manually.
+   - **Electron:** `npx winapp node add-electron-debug-identity`
+   - **All other frameworks:** `winapp create-debug-identity <path-to-exe>`
+
 ## Complete command reference
 
 ### `winapp init [base-directory]`
@@ -173,6 +177,7 @@ Does the project already have an appxmanifest.xml?
 - **Package:** Build with your packager (e.g., Electron Forge), then `winapp package <dist> --cert .\devcert.pfx`
 - Use `winapp node create-addon` to create native C#/C++ addons for Windows APIs
 - Use `winapp node add-electron-debug-identity` / `clear-electron-debug-identity` for identity management
+- **⚠️ Always run `npx winapp node add-electron-debug-identity` before testing any Windows API that requires package identity** — without this, APIs will fail at runtime
 - Guide: https://github.com/microsoft/WinAppCli/blob/main/docs/guides/electron/setup.md
 
 ### .NET (WPF, WinForms, Console)
@@ -251,6 +256,7 @@ When the user encounters an error, check these common causes:
 | "Package installation failed" | Stale registration or untrusted cert | Run `Get-AppxPackage <name> \| Remove-AppxPackage`, ensure cert is trusted |
 | "Certificate not trusted" | Dev cert not installed | Run `winapp cert install ./devcert.pfx` as admin |
 | "Build tools not found" | First run, tools not downloaded | winapp auto-downloads tools; ensure internet access |
+| Windows APIs fail at runtime | Debug identity not registered | Register debug identity after build and before launching: `winapp create-debug-identity <exe>` (or `npx winapp node add-electron-debug-identity` for Electron) — this is **mandatory** for any app using identity-requiring APIs |
 
 ## Key files and concepts
 
