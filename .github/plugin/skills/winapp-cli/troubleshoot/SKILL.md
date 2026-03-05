@@ -10,6 +10,24 @@ Use this skill when:
 - **Choosing the right command** for a task
 - **Understanding prerequisites** — what each command needs and what it produces
 
+## Known issues
+
+### Windows APIs fail at runtime (missing debug identity)
+
+**Symptoms:** Windows APIs that require package identity (push notifications, background tasks, share target, startup tasks, Windows AI APIs) throw errors or silently fail, even though the code and `appxmanifest.xml` are correctly configured.
+
+**Cause:** The app process does not have package identity. A standard `.exe` (whether from `dotnet build`, Electron, `cmake`, `cargo build`, `flutter build`, etc.) does **not** have identity by default — it must be explicitly registered.
+
+**Solution:** Always register debug identity after building the app and before launching it. This must be done every time after changing `appxmanifest.xml` or `Assets/`. This step is **mandatory** for any app using identity-requiring Windows APIs — do not skip it.
+
+```powershell
+# For Electron apps:
+npx winapp node add-electron-debug-identity
+
+# For all other frameworks (.NET, C++, Rust, Flutter, Tauri):
+winapp create-debug-identity <path-to-exe>
+```
+
 ## Common errors & solutions
 
 | Error | Cause | Solution |

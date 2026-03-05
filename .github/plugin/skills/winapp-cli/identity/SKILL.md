@@ -81,6 +81,21 @@ After running, launch your exe normally — Windows will recognize it as having 
 - If you have both a debug identity and an installed MSIX, they may conflict — use `--keep-identity` carefully
 - For Electron apps, use `npx winapp node add-electron-debug-identity` instead (handles Electron-specific paths)
 
+## ⚠️ Always register debug identity before testing Windows APIs
+
+> **CRITICAL:** All apps **must** have debug identity registered before any Windows API that requires package identity will work. Without this step, APIs like push notifications, background tasks, share target, startup tasks, and Windows AI APIs will fail at runtime — even if the code and manifest are correctly configured. This is the #1 cause of "API calls fail at runtime" issues.
+
+**Always include this step when setting up Windows APIs:**
+```powershell
+# For Electron apps:
+npx winapp node add-electron-debug-identity
+
+# For all other frameworks (.NET, C++, Rust, Flutter, Tauri):
+winapp create-debug-identity <path-to-exe>
+```
+
+Re-run the appropriate command whenever you change `appxmanifest.xml` or `Assets/`.
+
 ## Troubleshooting
 | Error | Cause | Solution |
 |-------|-------|----------|
