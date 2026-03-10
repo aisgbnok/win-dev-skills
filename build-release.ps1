@@ -608,12 +608,6 @@ if (-not $Publish) {
     try {
         gh release create $tag $ZipPath --repo "microsoft/win-dev-skills" --title $title --notes "Release v$Version of the Windows Development Skills toolkit.`n`nDownload the zip, extract, and double-click ``install.cmd`` to install." --latest
         Write-Host "[OK] Release published: https://github.com/microsoft/win-dev-skills/releases/tag/$tag" -ForegroundColor Green
-
-        # Persist version after successful publish
-        $pluginData = Get-Content $PluginJsonPath -Raw | ConvertFrom-Json
-        $pluginData.version = $Version
-        $pluginData | ConvertTo-Json -Depth 10 | Set-Content -Path $PluginJsonPath -Encoding UTF8
-        Write-Host "[OK] plugin.json version updated to $Version" -ForegroundColor Green
     } catch {
         Write-Warning "Failed to publish release: $_"
         Write-Host "  The zip is available at: $ZipPath" -ForegroundColor Yellow
