@@ -18,20 +18,15 @@ Your job is to build complete, working WinUI 3 apps and **verify they work** by 
 
 ---
 
-## Tool Paths
+## Tools
 
-The tools are installed at a well-known location. Detect architecture and use absolute paths:
+All three tools are available on PATH — use them directly:
 
-```powershell
-$toolsDir = Join-Path $env:USERPROFILE ".winui3-agent\tools"
-$nugetsDir = Join-Path $env:USERPROFILE ".winui3-agent\nugets"
+- `winapp` — installed via MSIX package (app execution alias)
+- `raka` — installed via MSIX package (app execution alias)
+- `dotnet` — .NET CLI
 
-# Tool executables
-$raka = Join-Path $toolsDir "raka.exe"
-$winapp = Join-Path $toolsDir "winapp.exe"
-```
-
-For brevity, the examples below use `raka` and `winapp` — always expand to the full absolute path when running commands.
+NuGet packages (`Raka.DevTools`, `Microsoft.Windows.SDK.BuildTools.WinApp`) are registered as a user-level NuGet source during installation, so `dotnet add package` and `dotnet restore` work without any per-project configuration.
 
 ---
 
@@ -105,20 +100,6 @@ dotnet new winui -n MyApp
 cd MyApp
 ```
 
-Create a `nuget.config` that includes the local packages:
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <packageSources>
-    <clear />
-    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
-    <add key="winui3-agent" value="NUGETS_PATH" />
-  </packageSources>
-</configuration>
-```
-
-Replace `NUGETS_PATH` with the resolved absolute path to `$env:USERPROFILE\.winui3-agent\nugets`.
-
 ```bash
 # One-time setup: initialize winapp (manifest, package identity, SDK packages)
 winapp init --use-defaults
@@ -174,24 +155,23 @@ Use the **raka** skill for all Raka commands. Consult the other skills when work
 
 1. **The template name is `winui`, NOT `winui3`** — use `dotnet new winui -n <AppName>`. The `-n` flag creates the subfolder. Do NOT mkdir first.
 2. **Preserve template-generated files** — after `dotnet new winui`, the template creates a MainWindow.xaml with TitleBar, SystemBackdrop, and layout. Insert your content into the existing structure — do NOT rewrite the entire file.
-3. **Create a `nuget.config`** in each project pointing to the local nugets as a package source.
-4. **Always build with `-c Debug`** — Raka.DevTools is stripped from Release builds.
-5. **Always use `--app` or `--pid`** on the first raka command to connect, then it's saved.
-6. **Always use `x:Name`** on interactive elements — `--name` is more reliable than element IDs.
-7. **Element IDs change** after page navigation — re-search or use `x:Name`.
-8. **Use `navigate`** instead of clicking NavigationViewItems — it's more reliable.
-9. **Use `--from-page`** on inspect/search to skip framework nesting.
-10. **Use `click`** for real interactions, `invoke` for fast automation.
-11. **Screenshot after every change** — visual verification is the only reliable check.
-12. **Use hot-reload** for XAML tweaks — only rebuild for C# changes or new files.
-13. **Use `scroll-into-view`** before clicking off-screen elements.
-14. **`{x:Bind}` text is not searchable** by `raka search --text` — use `--name` or `--type` instead.
-15. **Ensure window size fits content** — after adding UI, verify with `raka screenshot` that nothing is cut off. Resize with `AppWindow.Resize` if needed.
-16. **Log feedback immediately** — every error, retry, or workaround goes in `FEEDBACK.md` before moving on.
-17. **Build complete UI before first launch** — write all XAML elements first, calculate window size, then launch once. Do not launch with a partial UI and iterate.
-18. **Use `raka inspect` before screenshotting** — verify elements exist and aren't clipped. Screenshots are for visual polish, not discovering missing elements.
-19. **Use hot-reload for XAML-only changes** — `raka hot-reload` gives ~2s iteration vs ~45s for full rebuild. Only rebuild for C# changes.
-20. **Partial properties require C# 13 (net9.0+)** — the `winui` template targets net8.0 (C# 12). Use field-based `[ObservableProperty] private string _prop` pattern, not `public partial string Prop { get; set; }`. Ignore MVVMTK0045 warnings.
+3. **Always build with `-c Debug`** — Raka.DevTools is stripped from Release builds.
+4. **Always use `--app` or `--pid`** on the first raka command to connect, then it's saved.
+5. **Always use `x:Name`** on interactive elements — `--name` is more reliable than element IDs.
+6. **Element IDs change** after page navigation — re-search or use `x:Name`.
+7. **Use `navigate`** instead of clicking NavigationViewItems — it's more reliable.
+8. **Use `--from-page`** on inspect/search to skip framework nesting.
+9. **Use `click`** for real interactions, `invoke` for fast automation.
+10. **Screenshot after every change** — visual verification is the only reliable check.
+11. **Use hot-reload** for XAML tweaks — only rebuild for C# changes or new files.
+12. **Use `scroll-into-view`** before clicking off-screen elements.
+13. **`{x:Bind}` text is not searchable** by `raka search --text` — use `--name` or `--type` instead.
+14. **Ensure window size fits content** — after adding UI, verify with `raka screenshot` that nothing is cut off. Resize with `AppWindow.Resize` if needed.
+15. **Log feedback immediately** — every error, retry, or workaround goes in `FEEDBACK.md` before moving on.
+16. **Build complete UI before first launch** — write all XAML elements first, calculate window size, then launch once. Do not launch with a partial UI and iterate.
+17. **Use `raka inspect` before screenshotting** — verify elements exist and aren't clipped. Screenshots are for visual polish, not discovering missing elements.
+18. **Use hot-reload for XAML-only changes** — `raka hot-reload` gives ~2s iteration vs ~45s for full rebuild. Only rebuild for C# changes.
+19. **Partial properties require C# 13 (net9.0+)** — the `winui` template targets net8.0 (C# 12). Use field-based `[ObservableProperty] private string _prop` pattern, not `public partial string Prop { get; set; }`. Ignore MVVMTK0045 warnings.
 
 ---
 
