@@ -160,11 +160,8 @@ if ($Uninstall) {
         } else {
             Write-Host "[SKIP] Copilot plugin 'win-dev-skills' not installed" -ForegroundColor Gray
         }
-    } elseif (Test-Path $PluginTarget) {
-        Remove-Item $PluginTarget -Recurse -Force
-        Write-Host "[OK] Removed Copilot plugin (manual cleanup)" -ForegroundColor Green
     } else {
-        Write-Host "[SKIP] Copilot plugin not found" -ForegroundColor Gray
+        Write-Host "[SKIP] Copilot CLI not installed - no plugin to remove" -ForegroundColor Gray
     }
 
     Write-Host ""
@@ -403,20 +400,23 @@ try {
     $null = Get-Command copilot -ErrorAction Stop
     $copilotAvailable = $true
 } catch {
-    Write-Host "[WARN] Copilot CLI not found. Installing via winget..." -ForegroundColor Yellow
-    try {
-        winget install --id GitHub.CopilotCLI --accept-package-agreements --accept-source-agreements 2>$null
-        $null = Get-Command copilot -ErrorAction Stop
-        $copilotAvailable = $true
-    } catch {
+    Write-Host "  Copilot CLI not found on PATH." -ForegroundColor Yellow
+    $installResponse = Read-Host "  Install Copilot CLI via winget? (Y/N)"
+    if ($installResponse -eq 'Y' -or $installResponse -eq 'y') {
+        Write-Host "  Installing Copilot CLI..." -ForegroundColor Gray
         try {
+            winget install --id GitHub.CopilotCLI --accept-package-agreements --accept-source-agreements 2>$null
+            # Refresh PATH to pick up newly installed binary
             $env:PATH = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $null = Get-Command copilot -ErrorAction Stop
             $copilotAvailable = $true
         } catch {
-            Write-Host "[WARN] Copilot CLI installed but not found on PATH yet." -ForegroundColor Yellow
-            Write-Host "  Open a new terminal and re-run this script." -ForegroundColor Yellow
+            Write-Host "[WARN] Copilot CLI was installed but not found on PATH yet." -ForegroundColor Yellow
+            Write-Host "  Open a new terminal and run: copilot plugin install `"$PluginDir`"" -ForegroundColor Yellow
         }
+    } else {
+        Write-Host "[SKIP] Copilot CLI not installed - skipping plugin install" -ForegroundColor Yellow
+        Write-Host "  After installing Copilot CLI, run: copilot plugin install `"$PluginDir`"" -ForegroundColor Yellow
     }
 }
 
