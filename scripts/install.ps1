@@ -11,9 +11,16 @@
 
     Run this script from inside the extracted release zip.
     No internet, authentication, or admin privileges required.
+.PARAMETER Uninstall
+    Remove all installed components (tools, NuGet packages, templates, plugin).
 .EXAMPLE
     .\install.ps1
+.EXAMPLE
+    .\install.ps1 -Uninstall
 #>
+param(
+    [switch]$Uninstall
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -49,7 +56,114 @@ trap {
     exit 1
 }
 
-Write-Host ""
+# --- Shared paths ---
+$ToolsTarget = Join-Path $env:USERPROFILE ".winui3-agent\tools"
+$NugetsTarget = Join-Path $env:USERPROFILE ".winui3-agent\nugets"
+$AgentDir = Join-Path $env:USERPROFILE ".winui3-agent"
+$PluginTarget = Join-Path $env:USERPROFILE ".copilot\agents\win-dev-skills"
+$NuGetSourceName = "WinApp-Dev"
+
+# ============================================================================
+# Uninstall mode
+# ============================================================================
+if ($Uninstall) {
+    Write-Host ""
+    Write-Host "================================================" -ForegroundColor Yellow
+    Write-Host "  Windows Development Skills - Uninstall" -ForegroundColor Yellow
+    Write-Host "================================================" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "This will remove:" -ForegroundColor White
+    Write-Host ""
+
+    $itemsToRemove = @()
+    if (Test-Path $ToolsTarget) { $itemsToRemove += "  - CLI tools: $ToolsTarget" }
+    if (Test-Path $NugetsTarget) { $itemsToRemove += "  - NuGet packages: $NugetsTarget" }
+    if (Test-Path $PluginTarget) { $itemsToRemove += "  - Copilot plugin: $PluginTarget" }
+    $itemsToRemove += "  - PATH entry for tools directory"
+    $itemsToRemove += "  - NuGet source '$NuGetSourceName' (if registered)"
+    $itemsToRemove += "  - WinUI 3 project templates (if installed)"
+
+    foreach ($item in $itemsToRemove) { Write-Host $item -ForegroundColor Gray }
+    Write-Host ""
+
+    $response = Read-Host "Proceed with uninstall? (Y/N)"
+    if ($response -ne 'Y' -and $response -ne 'y') {
+        Write-Host "[CANCELLED]" -ForegroundColor Yellow
+        exit 0
+    }
+    Write-Host ""
+
+    # Remove tools directory
+    if (Test-Path $ToolsTarget) {
+        Remove-Item $ToolsTarget -Recurse -Force
+        Write-Host "[OK] Removed tools directory" -ForegroundColor Green
+    } else {
+        Write-Host "[SKIP] Tools directory not found" -ForegroundColor Gray
+    }
+
+    # Remove NuGet packages
+    if (Test-Path $NugetsTarget) {
+        Remove-Item $NugetsTarget -Recurse -Force
+        Write-Host "[OK] Removed NuGet packages directory" -ForegroundColor Green
+    } else {
+        Write-Host "[SKIP] NuGet packages directory not found" -ForegroundColor Gray
+    }
+
+    # Remove parent .winui3-agent if empty
+    if ((Test-Path $AgentDir) -and @(Get-ChildItem $AgentDir -Force -ErrorAction SilentlyContinue).Count -eq 0) {
+        Remove-Item $AgentDir -Force
+        Write-Host "  - Removed empty $AgentDir" -ForegroundColor Gray
+    }
+
+    # Remove tools from user PATH
+    $userPath = [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::User)
+    if ($userPath) {
+        $parts = $userPath -split ";" | Where-Object { $_ -ne $ToolsTarget -and $_ -ne "" }
+        $newPath = $parts -join ";"
+        if ($newPath -ne $userPath) {
+            [Environment]::SetEnvironmentVariable("PATH", $newPath, [EnvironmentVariableTarget]::User)
+            Write-Host "[OK] Removed tools directory from user PATH" -ForegroundColor Green
+        } else {
+            Write-Host "[SKIP] Tools directory was not on PATH" -ForegroundColor Gray
+        }
+    }
+
+    # Remove NuGet source
+    $existingSources = dotnet nuget list source 2>$null
+    if ($existingSources -match $NuGetSourceName) {
+        dotnet nuget remove source $NuGetSourceName 2>$null
+        Write-Host "[OK] Removed NuGet source '$NuGetSourceName'" -ForegroundColor Green
+    } else {
+        Write-Host "[SKIP] NuGet source '$NuGetSourceName' not registered" -ForegroundColor Gray
+    }
+
+    # Uninstall WinUI 3 templates
+    $templatePkg = "Microsoft.WindowsAppSDK.WinUI.CSharp.Templates"
+    $installedTemplates = dotnet new list 2>$null
+    if ($installedTemplates -match "winui") {
+        dotnet new uninstall $templatePkg 2>$null
+        Write-Host "[OK] Uninstalled WinUI 3 templates" -ForegroundColor Green
+    } else {
+        Write-Host "[SKIP] WinUI 3 templates not installed" -ForegroundColor Gray
+    }
+
+    # Remove Copilot plugin
+    if (Test-Path $PluginTarget) {
+        Remove-Item $PluginTarget -Recurse -Force
+        Write-Host "[OK] Removed Copilot plugin" -ForegroundColor Green
+    } else {
+        Write-Host "[SKIP] Copilot plugin not found" -ForegroundColor Gray
+    }
+
+    Write-Host ""
+    Write-Host "================================================" -ForegroundColor Green
+    Write-Host "  Uninstall Complete!" -ForegroundColor Green
+    Write-Host "================================================" -ForegroundColor Green
+    Write-Host ""
+    Write-Host "  Open a NEW terminal for PATH changes to take effect." -ForegroundColor Cyan
+    Write-Host ""
+    exit 0
+}
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "  Windows Development Skills - Installer" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
@@ -77,8 +191,58 @@ $ToolsSrcDir = Join-Path $ScriptDir "tools"
 $NugetsDir = Join-Path $ScriptDir "nugets"
 $PluginDir = Join-Path $ScriptDir "plugin"
 
-$ToolsTarget = Join-Path $env:USERPROFILE ".winui3-agent\tools"
-$NugetsTarget = Join-Path $env:USERPROFILE ".winui3-agent\nugets"
+# ============================================================================
+# Step 0: Detect conflicting MSIX packages
+# ============================================================================
+Write-Host "[PRE] Checking for conflicting MSIX packages..." -ForegroundColor Cyan
+Write-Host ""
+
+$msixConflicts = @()
+
+# WinApp CLI - check for 'winapp' and 'winapp-dev' MSIX packages
+$winappMsix = Get-AppxPackage -Name "winapp" -ErrorAction SilentlyContinue
+$winappDevMsix = Get-AppxPackage -Name "winapp-dev" -ErrorAction SilentlyContinue
+if ($winappMsix) { $msixConflicts += $winappMsix }
+if ($winappDevMsix) { $msixConflicts += $winappDevMsix }
+
+# Raka CLI - check for 'nmetulev.Raka' MSIX package
+$rakaMsix = Get-AppxPackage -Name "nmetulev.Raka" -ErrorAction SilentlyContinue
+if ($rakaMsix) { $msixConflicts += $rakaMsix }
+
+if ($msixConflicts.Count -gt 0) {
+    Write-Host "  Found MSIX-installed packages that will conflict:" -ForegroundColor Yellow
+    Write-Host ""
+    foreach ($pkg in $msixConflicts) {
+        Write-Host "    - $($pkg.Name) v$($pkg.Version)" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    Write-Host "  MSIX packages register an AppExecutionAlias that takes priority" -ForegroundColor Yellow
+    Write-Host "  over PATH. The portable tools installed by this script would be" -ForegroundColor Yellow
+    Write-Host "  shadowed and never used." -ForegroundColor Yellow
+    Write-Host ""
+
+    $uninstallResponse = Read-Host "  Uninstall these MSIX packages? (Y/N)"
+    if ($uninstallResponse -eq 'Y' -or $uninstallResponse -eq 'y') {
+        foreach ($pkg in $msixConflicts) {
+            Write-Host "  Removing $($pkg.Name)..." -ForegroundColor Gray
+            try {
+                Remove-AppxPackage -Package $pkg.PackageFullName -ErrorAction Stop
+                Write-Host "  [OK] Removed $($pkg.Name)" -ForegroundColor Green
+            } catch {
+                Write-Host "  [WARN] Could not remove $($pkg.Name): $_" -ForegroundColor Yellow
+                Write-Host "  You may need to uninstall it manually from Settings > Apps." -ForegroundColor Yellow
+            }
+        }
+    } else {
+        Write-Host ""
+        Write-Host "  [WARN] Keeping MSIX packages. The portable tools may not work" -ForegroundColor Yellow
+        Write-Host "  correctly until the MSIX versions are uninstalled." -ForegroundColor Yellow
+    }
+    Write-Host ""
+} else {
+    Write-Host "  No conflicting MSIX packages found" -ForegroundColor Gray
+    Write-Host ""
+}
 
 # ============================================================================
 # Step 1: Install CLI tools (copy executables + add to PATH)
@@ -107,8 +271,17 @@ $toolsCopied = 0
 if (Test-Path $archSrcDir) {
     $exeFiles = Get-ChildItem -Path $archSrcDir -Filter "*.exe"
     foreach ($exe in $exeFiles) {
+        $targetPath = Join-Path $ToolsTarget $exe.Name
+        if (Test-Path $targetPath) {
+            $existing = Get-Item $targetPath
+            $existingSize = [math]::Round($existing.Length / 1KB, 1)
+            $newSize = [math]::Round($exe.Length / 1KB, 1)
+            $existingDate = $existing.LastWriteTime.ToString("yyyy-MM-dd HH:mm")
+            Write-Host "  - $($exe.Name): updating (existing: ${existingSize}KB, $existingDate -> new: ${newSize}KB)" -ForegroundColor Gray
+        } else {
+            Write-Host "  - $($exe.Name): installing (new)" -ForegroundColor Gray
+        }
         Copy-Item $exe.FullName $ToolsTarget -Force
-        Write-Host "  - $($exe.Name) -> $ToolsTarget" -ForegroundColor Gray
         $toolsCopied++
     }
 } else {
