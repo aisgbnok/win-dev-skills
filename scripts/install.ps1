@@ -148,9 +148,21 @@ if ($Uninstall) {
     }
 
     # Remove Copilot plugin
-    if (Test-Path $PluginTarget) {
+    $copilotAvailable = $false
+    try { $null = Get-Command copilot -ErrorAction Stop; $copilotAvailable = $true } catch { }
+
+    if ($copilotAvailable) {
+        $pluginList = & copilot plugin list 2>&1
+        if ($pluginList -match "win-dev-skills") {
+            $uninstallOutput = & copilot plugin uninstall win-dev-skills 2>&1
+            Write-Host "  $uninstallOutput" -ForegroundColor Gray
+            Write-Host "[OK] Removed Copilot plugin via CLI" -ForegroundColor Green
+        } else {
+            Write-Host "[SKIP] Copilot plugin 'win-dev-skills' not installed" -ForegroundColor Gray
+        }
+    } elseif (Test-Path $PluginTarget) {
         Remove-Item $PluginTarget -Recurse -Force
-        Write-Host "[OK] Removed Copilot plugin" -ForegroundColor Green
+        Write-Host "[OK] Removed Copilot plugin (manual cleanup)" -ForegroundColor Green
     } else {
         Write-Host "[SKIP] Copilot plugin not found" -ForegroundColor Gray
     }
@@ -409,16 +421,15 @@ try {
 }
 
 if ($copilotAvailable -and (Test-Path $PluginDir)) {
-    $copilotAgentsDir = Join-Path $env:USERPROFILE ".copilot\agents"
-    $pluginTarget = Join-Path $copilotAgentsDir "win-dev-skills"
-
-    if (Test-Path $pluginTarget) {
-        Remove-Item $pluginTarget -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "  Installing plugin via Copilot CLI..." -ForegroundColor Gray
+    try {
+        $installOutput = & copilot plugin install $PluginDir 2>&1
+        Write-Host "  $installOutput" -ForegroundColor Gray
+        Write-Host "[OK] Copilot CLI plugin installed" -ForegroundColor Green
+    } catch {
+        Write-Host "[WARN] 'copilot plugin install' failed: $_" -ForegroundColor Yellow
+        Write-Host "  Try manually: copilot plugin install `"$PluginDir`"" -ForegroundColor Yellow
     }
-
-    New-Item -ItemType Directory -Path $copilotAgentsDir -Force | Out-Null
-    Copy-Item $PluginDir $pluginTarget -Recurse -Force
-    Write-Host "[OK] Copilot CLI plugin installed" -ForegroundColor Green
 } elseif (-not (Test-Path $PluginDir)) {
     Write-Host "[SKIP] Plugin directory not found in bundle" -ForegroundColor Yellow
 }
