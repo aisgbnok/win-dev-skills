@@ -5,7 +5,7 @@ description: 'Win2D 2D graphics rendering — CanvasControl, drawing, effects, s
 
 # Win2D — 2D Graphics for WinUI 3
 
-Win2D is an easy-to-use Windows Runtime API for immediate-mode 2D graphics rendering with GPU acceleration. It wraps Direct2D and integrates with WinUI 3 XAML.
+Win2D is an easy-to-use Windows Runtime API for immediate-mode 2D graphics rendering with GPU acceleration. It wraps Direct2D and integrates with WinUI 3 XAML. Use it for custom charts and data visualizations, drawing-canvas apps, particle systems, real-time animations, image processing and filters, and rendering thousands of sprites in a single draw call.
 
 ---
 
@@ -13,13 +13,13 @@ Win2D is an easy-to-use Windows Runtime API for immediate-mode 2D graphics rende
 
 Add the Win2D NuGet package:
 
-```bash
+```powershell
 dotnet add package Microsoft.Graphics.Win2D
 ```
 
 For custom pixel shaders, also add:
 
-```bash
+```powershell
 dotnet add package ComputeSharp.D2D1.WinUI
 ```
 
@@ -305,6 +305,23 @@ private void OnCanvasDraw(CanvasControl sender, CanvasDrawEventArgs args)
 
 Win2D supports custom GPU pixel shaders via the `ComputeSharp.D2D1.WinUI` package. This enables effects beyond the built-in set.
 
+### Best practices
+
+| Rule | Details |
+|------|---------|
+| **Struct shape** | Must be `readonly partial struct` implementing `ID2D1PixelShader` |
+| **Required attributes** | Always add `[D2DInputCount(N)]`, `[D2DInputSimple(n)]` (or `[D2DInputComplex(n)]`), and `[D2DGeneratedPixelShaderDescriptor]` |
+| **C# ⊂ HLSL** | Only the HLSL-compatible subset of C# is allowed in `Execute()` — no LINQ, no strings, no exceptions. Use `Hlsl.*` intrinsics for math |
+| **Alpha handling** | Win2D uses pre-multiplied alpha internally; D2D shaders expect straight alpha. Always chain `UnPremultiplyEffect` → shader → `PremultiplyEffect` |
+| **Effect graph registration** | Every node in a `CanvasEffect` graph must be registered (named or anonymous) so disposal is managed automatically |
+| **Property invalidation** | Use `SetPropertyAndInvalidateEffectGraph` for property setters — never plain auto-properties |
+| **Allocation** | Create `PixelShaderEffect<T>` once and reuse — do not allocate per frame |
+
+Key references for custom shaders:
+- [ComputeSharp wiki](https://github.com/Sergio0694/ComputeSharp/wiki) — full API docs and shader authoring guide
+- [ComputeSharp GitHub](https://github.com/Sergio0694/ComputeSharp) — source, WinUI 3 sample app, and D2D1 pixel shader examples
+- [Custom effects guide (MS Learn)](https://learn.microsoft.com/en-us/windows/apps/develop/win2d/custom-effects) — building `CanvasEffect` subclasses, effect graph registration, property invalidation
+
 ### Defining a pixel shader
 
 Define a `readonly partial struct` implementing `ID2D1PixelShader` with a C# `Execute()` method. ComputeSharp transpiles the C# to HLSL at compile time:
@@ -500,3 +517,4 @@ private void OnCanvasDraw(CanvasControl sender, CanvasDrawEventArgs args)
 | 5 | [Custom effects guide (Microsoft)](https://learn.microsoft.com/en-us/windows/apps/develop/win2d/custom-effects) | Building `CanvasEffect` subclasses, effect graph registration, property invalidation |
 | 6 | [CanvasControl reference](https://microsoft.github.io/Win2D/WinUI3/html/T_Microsoft_Graphics_Canvas_UI_Xaml_CanvasControl.htm) | CanvasControl API details, events, properties |
 | 7 | [CanvasAnimatedControl reference](https://microsoft.github.io/Win2D/WinUI3/html/T_Microsoft_Graphics_Canvas_UI_Xaml_CanvasAnimatedControl.htm) | Game loop, Update/Draw events, TargetElapsedTime |
+| 8 | [Win2D on Microsoft Learn](https://learn.microsoft.com/en-us/windows/apps/develop/win2d/) | General overview, tutorials, and getting-started guidance |
