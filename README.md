@@ -2,7 +2,8 @@
 
 Copilot CLI skills and agents for Windows app development.
 
-> **Note:** The install script and release bundling are **temporary**. The tools (WinApp CLI, Raka CLI) and NuGet packages are currently in preview and not yet available in public package registries. Once they are published publicly, the agents will handle tool installation automatically — no script needed, and the plugin will be installable directly from the Copilot CLI.
+> [!IMPORTANT]
+> :warning: **Note:** The install script and release bundling are **temporary**. The versions of the tools (WinApp CLI, Raka CLI) and NuGet packages are currently in preview or proof of concepts and are not available in public package registries. For public facing skills, the agents will handle tool installation automatically with tools and packages available in public registries — no script needed, and the plugin will be installable directly from the Copilot CLI.
 
 ## What's in this repo
 
