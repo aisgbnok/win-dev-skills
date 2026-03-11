@@ -33,6 +33,7 @@ Win2D provides three XAML controls. Choose based on your scenario:
 |---------|-------------|-----------------|-----------------|
 | **CanvasControl** | Easiest — single `Draw` event | Static or infrequently updated content (charts, diagrams, icons) | On-demand — call `Invalidate()` to trigger redraw |
 | **CanvasAnimatedControl** | Moderate — `Update` + `Draw` loop | Continuous animation, games, real-time visualizations | Fixed-timestep game loop with `TargetElapsedTime` |
+| **CanvasSwapChainPanel** | Advanced — manual draw + `Present()` | High-frequency rendering where you need full control over frame timing | Manual — you create the `CanvasSwapChain`, draw, and call `Present()` yourself |
 | **CanvasVirtualControl** | Advanced — region-based invalidation | Very large or infinite canvases (maps, documents) | Only draws visible regions on demand |
 
 ### XAML usage
@@ -48,6 +49,37 @@ xmlns:canvas="using:Microsoft.Graphics.Canvas.UI.Xaml"
                               Update="OnAnimatedUpdate"
                               TargetElapsedTime="0:0:0.016"
                               IsFixedTimeStep="True" />
+
+<!-- Manual swap chain (advanced) -->
+<canvas:CanvasSwapChainPanel x:Name="swapChainPanel" />
+```
+
+For `CanvasSwapChainPanel`, you create and manage the swap chain yourself:
+
+```csharp
+private void Page_Loaded(object sender, RoutedEventArgs e)
+{
+    var swapChain = new CanvasSwapChain(
+        CanvasDevice.GetSharedDevice(),
+        (float)swapChainPanel.ActualWidth,
+        (float)swapChainPanel.ActualHeight,
+        96);
+    swapChainPanel.SwapChain = swapChain;
+}
+
+private void DrawFrame()
+{
+    using (var ds = swapChainPanel.SwapChain.CreateDrawingSession(Colors.White))
+    {
+        ds.DrawCircle(200, 150, 80, Colors.Red, 4);
+    }
+    swapChainPanel.SwapChain.Present();
+}
+
+private void SwapChainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
+{
+    swapChainPanel.SwapChain?.ResizeBuffers(e.NewSize);
+}
 ```
 
 ### WinUI features you must handle manually
@@ -60,6 +92,11 @@ Win2D renders directly to a GPU surface, bypassing the XAML visual tree. This me
 | **Theming** | No automatic light/dark theme colors | Subscribe to `ActualThemeChanged` on the hosting `FrameworkElement` and re-read theme resources (`Application.Current.Resources`) to update your drawing colors |
 | **Hit testing** | No built-in pointer-to-element mapping | Implement coordinate math in `PointerPressed`/`PointerMoved` on the hosting control, mapping pixel positions to your logical objects |
 | **High contrast** | Win2D does not respond to system high-contrast settings | Detect high-contrast mode via `AccessibilitySettings.HighContrast` and switch to high-contrast color palettes |
+| **Keyboard focus** | No focus rings or tab navigation for drawn elements | Draw custom focus indicators and handle `KeyDown`/`GotFocus` on the hosting control; map keys to your logical objects |
+| **Text selection** | Text drawn with `DrawText`/`DrawTextLayout` cannot be selected or copied | Implement custom selection tracking with pointer events and copy to clipboard via `DataPackage` |
+| **Live regions** | Narrator cannot announce changes to drawn content | Use `AutomationPeer.RaiseAutomationEvent` or overlay a hidden XAML `TextBlock` with `AutomationProperties.LiveSetting` |
+
+Other XAML features that do not apply to drawn content: tooltips, context menus, drag-and-drop, data binding, storyboard animations, and control templates. Implement these manually or overlay XAML elements when needed.
 
 ---
 
@@ -170,6 +207,11 @@ private void Page_Unloaded(object sender, RoutedEventArgs e)
 {
     canvasControl.RemoveFromVisualTree();
     canvasControl = null;
+
+    // For CanvasSwapChainPanel, also dispose the swap chain
+    swapChainPanel?.SwapChain?.Dispose();
+    swapChainPanel?.RemoveFromVisualTree();
+    swapChainPanel = null;
 }
 ```
 
@@ -295,6 +337,7 @@ Subclass `CanvasEffect` to wire the shader into an effect graph. Key rules:
 ```csharp
 using ComputeSharp.D2D1.WinUI;
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Effects;
 
 public sealed class GrayscaleEffect : CanvasEffect
 {
