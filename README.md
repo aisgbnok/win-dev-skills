@@ -10,8 +10,8 @@ Copilot CLI skills and agents for Windows app development.
   - **winapp** agent — MSIX packaging, code signing, Windows SDK, package identity (Electron, .NET, C++, Rust, Flutter, Tauri)
   - **winui3-builder** agent — WinUI 3 app development with live UI automation via Raka
   - Skills for setup, packaging, signing, manifest authoring, troubleshooting, and more
-- **`install.ps1` / `install.cmd`** — User installer (temporary, see below)
-- **`build-release.ps1`** — Maintainer script to download artifacts and publish releases
+- **`scripts/install.ps1` / `scripts/install.cmd`** — User installer (temporary, see below)
+- **`scripts/build-release.ps1`** — Maintainer script to download artifacts and publish releases
 
 ## Quick start
 
@@ -60,16 +60,16 @@ The `build-release.ps1` script downloads artifacts from source repositories, bun
 
 ```powershell
 # Download artifacts and create zip (default - no publish)
-.\build-release.ps1
+.\scripts\build-release.ps1
 
 # Explicit version
-.\build-release.ps1 -Version "0.3.0"
+.\scripts\build-release.ps1 -Version "0.3.0"
 
 # Build and publish to GitHub Releases
-.\build-release.ps1 -Publish
+.\scripts\build-release.ps1 -Publish
 
 # Skip templates if you don't have ADO access
-.\build-release.ps1 -SkipTemplates
+.\scripts\build-release.ps1 -SkipTemplates
 ```
 
 The script will:

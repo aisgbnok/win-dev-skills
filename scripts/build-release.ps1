@@ -46,7 +46,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path $PSCommandPath -Parent
-$RepoRoot = $ScriptDir
+$RepoRoot = Split-Path $ScriptDir -Parent
 $PluginJsonPath = Join-Path $RepoRoot ".github\plugin\plugin.json"
 $ReleaseRepo = "microsoft/win-dev-skills"
 
@@ -89,10 +89,10 @@ Write-Host "================================================" -ForegroundColor C
 Write-Host ""
 
 $ScriptDir = Split-Path $PSCommandPath -Parent
-$RepoRoot = $ScriptDir
+$RepoRoot = Split-Path $ScriptDir -Parent
 $PluginDir = Join-Path $RepoRoot ".github\plugin"
-$InstallScript = Join-Path $RepoRoot "install.ps1"
-$InstallCmd = Join-Path $RepoRoot "install.cmd"
+$InstallScript = Join-Path $ScriptDir "install.ps1"
+$InstallCmd = Join-Path $ScriptDir "install.cmd"
 
 $BundleName = "win-dev-skills-v$Version"
 $StagingDir = Join-Path $RepoRoot "staging\$BundleName"
