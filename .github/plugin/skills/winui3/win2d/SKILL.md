@@ -142,9 +142,9 @@ private async Task CreateResourcesAsync(CanvasControl sender)
 The GPU device can be lost at any time (driver update, hardware reset, resource exhaustion). Always handle this:
 
 ```csharp
-public static T RunWithDeviceRecovery<T>(Func<CanvasDevice, T> action)
+public static T RunWithDeviceRecovery<T>(Func<CanvasDevice, T> action, int maxRetries = 3)
 {
-    while (true)
+    for (int attempt = 0; attempt < maxRetries; attempt++)
     {
         var device = CanvasDevice.GetSharedDevice();
         try
@@ -156,6 +156,8 @@ public static T RunWithDeviceRecovery<T>(Func<CanvasDevice, T> action)
             device.RaiseDeviceLost();
         }
     }
+
+    throw new InvalidOperationException($"GPU device could not be recovered after {maxRetries} attempts.");
 }
 ```
 
@@ -261,71 +263,91 @@ private void OnCanvasDraw(CanvasControl sender, CanvasDrawEventArgs args)
 
 Win2D supports custom GPU pixel shaders via the `ComputeSharp.D2D1.WinUI` package. This enables effects beyond the built-in set.
 
-### Writing a CanvasEffect subclass
+### Defining a pixel shader
+
+Define a `readonly partial struct` implementing `ID2D1PixelShader` with a C# `Execute()` method. ComputeSharp transpiles the C# to HLSL at compile time:
 
 ```csharp
 using ComputeSharp;
 using ComputeSharp.D2D1;
-using ComputeSharp.D2D1.WinUI;
-using Microsoft.Graphics.Canvas;
 
-// 1. Define the shader struct
 [D2DInputCount(1)]
 [D2DInputSimple(0)]
-[D2DPixelShaderSource("""
-    float4 Execute()
+[D2DGeneratedPixelShaderDescriptor]
+internal readonly partial struct GrayscaleShader : ID2D1PixelShader
+{
+    public float4 Execute()
     {
-        float4 color = D2D1GetInput(0);
-        float gray = dot(color.rgb, float3(0.299, 0.587, 0.114));
-        return float4(gray, gray, gray, color.a);
+        float4 color = D2D.GetInput(0);
+        float gray = Hlsl.Dot(color.RGB, new float3(0.299f, 0.587f, 0.114f));
+        return new float4(gray, gray, gray, color.A);
     }
-""")]
-partial struct GrayscaleShader : ID2D1PixelShader;
+}
 ```
 
 ### Building the effect graph
 
-Chain effects using the `CanvasEffect` base class:
+Subclass `CanvasEffect` to wire the shader into an effect graph. Key rules:
+- **Register every node** in the graph (named or anonymous) so disposal is managed automatically.
+- Use `SetPropertyAndInvalidateEffectGraph` for property setters so the graph re-configures when inputs change.
+- Chain through `UnPremultiplyEffect` → shader → `PremultiplyEffect` because Win2D uses pre-multiplied alpha internally, but D2D shaders expect straight alpha.
 
 ```csharp
+using ComputeSharp.D2D1.WinUI;
+using Microsoft.Graphics.Canvas;
+
 public sealed class GrayscaleEffect : CanvasEffect
 {
+    private static readonly CanvasEffectNode<UnPremultiplyEffect> UnPremultiplyNode = new();
     private static readonly CanvasEffectNode<PixelShaderEffect<GrayscaleShader>> ShaderNode = new();
 
     private readonly UnPremultiplyEffect unpremultiply = new();
     private readonly PremultiplyEffect premultiply = new();
     private readonly PixelShaderEffect<GrayscaleShader> shader = new();
 
-    public IGraphicsEffectSource? Source { get; set; }
+    private ICanvasImage? _source;
+
+    public ICanvasImage? Source
+    {
+        get => _source;
+        set => SetPropertyAndInvalidateEffectGraph(ref _source, value);
+    }
 
     protected override void BuildEffectGraph(CanvasEffectGraph graph)
     {
-        // Chain: source → unpremultiply → shader → premultiply → output
         shader.Sources[0] = unpremultiply;
         premultiply.Source = shader;
 
+        graph.RegisterNode(UnPremultiplyNode, unpremultiply);
         graph.RegisterNode(ShaderNode, shader);
         graph.RegisterOutputNode(premultiply);
     }
 
     protected override void ConfigureEffectGraph(CanvasEffectGraph graph)
     {
-        unpremultiply.Source = Source;
+        graph.GetNode(UnPremultiplyNode).Source = _source;
     }
 }
 ```
 
 ### Using the effect
 
+Create the effect once and reuse it — do not allocate a new instance per frame:
+
 ```csharp
+private GrayscaleEffect? grayscaleEffect;
+
+private void OnCreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
+{
+    grayscaleEffect = new GrayscaleEffect();
+}
+
 private void OnCanvasDraw(CanvasControl sender, CanvasDrawEventArgs args)
 {
-    var effect = new GrayscaleEffect { Source = loadedBitmap };
-    args.DrawingSession.DrawImage(effect, 0, 0);
+    grayscaleEffect!.Source = loadedBitmap;
+    args.DrawingSession.DrawImage(grayscaleEffect, 0, 0);
 }
 ```
-
-> **Note:** Always chain through `UnPremultiplyEffect` → shader → `PremultiplyEffect` when working with alpha. Direct2D uses pre-multiplied alpha internally, and shaders that assume straight alpha will produce incorrect blending.
 
 ---
 
@@ -333,10 +355,15 @@ private void OnCanvasDraw(CanvasControl sender, CanvasDrawEventArgs args)
 
 ### Composition API
 
-Win2D surfaces can be used with `Windows.UI.Composition` for advanced animation and effects outside the canvas:
+Win2D surfaces can be used with `Microsoft.UI.Composition` for advanced animation and effects outside the canvas:
 
 ```csharp
 using Microsoft.Graphics.Canvas.UI.Composition;
+using Microsoft.UI.Xaml.Hosting;
+
+// Obtain the compositor from a XAML element (WinUI 3 pattern)
+var visual = ElementCompositionPreview.GetElementVisual(myElement);
+var compositor = visual.Compositor;
 
 var compositionDevice = CanvasComposition.CreateCompositionGraphicsDevice(
     compositor, CanvasDevice.GetSharedDevice());
@@ -353,7 +380,7 @@ using (var ds = CanvasComposition.CreateDrawingSession(surface))
 
 ### Printing
 
-Use `CanvasPrintDocument` to render Win2D content to a printer:
+Use `CanvasPrintDocument` to set up the document content. This example shows the Win2D document setup only — you must also register a `PrintTask` via the WinUI 3 print manager interop to trigger actual printing. See the [Win2D printing sample](https://github.com/Microsoft/Win2D-Samples) for the full registration flow.
 
 ```csharp
 var printDoc = new CanvasPrintDocument();
@@ -391,7 +418,7 @@ private void OnCanvasDraw(CanvasControl sender, CanvasDrawEventArgs args)
 
 ---
 
-## Common pitfalls
+## Common Pitfalls
 
 | Mistake | Fix |
 |---------|-----|
@@ -404,7 +431,7 @@ private void OnCanvasDraw(CanvasControl sender, CanvasDrawEventArgs args)
 | Using Win2D without accessibility fallbacks | Add `AutomationPeer` or overlay invisible XAML elements for screen reader content |
 | Not handling theme changes | Subscribe to `ActualThemeChanged` and update drawing colors |
 
-## Verification checklist
+### Verification Checklist
 
 - [ ] `Microsoft.Graphics.Win2D` NuGet package is referenced in the project
 - [ ] Win2D controls are disposed in the page `Unloaded` event via `RemoveFromVisualTree()`
@@ -413,16 +440,20 @@ private void OnCanvasDraw(CanvasControl sender, CanvasDrawEventArgs args)
 - [ ] `CanvasTextLayout` is used instead of `DrawText` for repeated text
 - [ ] `CanvasRenderTarget` caching is used for complex sub-trees that don't change every frame
 - [ ] Custom shaders use the UnPremultiply → Shader → Premultiply chain for correct alpha
-- [ ] Accessibility is addressed: either `AutomationPeer` is implemented or invisible XAML overlays provide screen reader content
+- [ ] Custom effect properties use `SetPropertyAndInvalidateEffectGraph` — never plain auto-properties
+- [ ] Accessibility is addressed: either `AutomationPeer` is implemented or invisible XAML overlays provide screen reader content (see the **accessibility** skill for full guidance)
 - [ ] Theme changes are handled: colors update when light/dark mode switches
 
-## Must read and research
+## Must Read & Research
 
-| Resource | Link |
-|----------|------|
-| Win2D documentation (WinUI 3) | https://microsoft.github.io/Win2D/WinUI3/html/Introduction.htm |
-| Win2D GitHub repository | https://github.com/Microsoft/Win2D |
-| Win2D samples (WinUI 3) | https://github.com/Microsoft/Win2D-Samples |
-| ComputeSharp GitHub | https://github.com/Sergio0694/ComputeSharp |
-| CanvasControl reference | https://microsoft.github.io/Win2D/WinUI3/html/T_Microsoft_Graphics_Canvas_UI_Xaml_CanvasControl.htm |
-| CanvasAnimatedControl reference | https://microsoft.github.io/Win2D/WinUI3/html/T_Microsoft_Graphics_Canvas_UI_Xaml_CanvasAnimatedControl.htm |
+> **Agent Rule:** Before generating Win2D code — especially custom shaders or Composition API interop — you **must** fetch and review the relevant references below using `fetch_webpage`. Apply what you learn — do not guess API shapes from memory alone.
+
+| # | Reference | When to consult |
+|---|-----------|-----------------|
+| 1 | [Win2D documentation (WinUI 3)](https://microsoft.github.io/Win2D/WinUI3/html/Introduction.htm) | Any Win2D feature — verify API signatures and behavior |
+| 2 | [Win2D GitHub repository](https://github.com/Microsoft/Win2D) | Source code, issues, latest changes |
+| 3 | [Win2D samples (WinUI 3)](https://github.com/Microsoft/Win2D-Samples) | Working examples for all Win2D features — search before implementing |
+| 4 | [ComputeSharp GitHub](https://github.com/Sergio0694/ComputeSharp) | Custom shader API, `CanvasEffect`, `D2DGeneratedPixelShaderDescriptor` usage |
+| 5 | [Custom effects guide (Microsoft)](https://learn.microsoft.com/en-us/windows/apps/develop/win2d/custom-effects) | Building `CanvasEffect` subclasses, effect graph registration, property invalidation |
+| 6 | [CanvasControl reference](https://microsoft.github.io/Win2D/WinUI3/html/T_Microsoft_Graphics_Canvas_UI_Xaml_CanvasControl.htm) | CanvasControl API details, events, properties |
+| 7 | [CanvasAnimatedControl reference](https://microsoft.github.io/Win2D/WinUI3/html/T_Microsoft_Graphics_Canvas_UI_Xaml_CanvasAnimatedControl.htm) | Game loop, Update/Draw events, TargetElapsedTime |
