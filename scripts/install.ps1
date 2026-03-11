@@ -405,7 +405,7 @@ try {
     if ($installResponse -eq 'Y' -or $installResponse -eq 'y') {
         Write-Host "  Installing Copilot CLI..." -ForegroundColor Gray
         try {
-            winget install --id GitHub.CopilotCLI --accept-package-agreements --accept-source-agreements 2>$null
+            winget install --id GitHub.Copilot --source winget --accept-package-agreements --accept-source-agreements 2>$null
             # Refresh PATH to pick up newly installed binary
             $env:PATH = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
             $null = Get-Command copilot -ErrorAction Stop
