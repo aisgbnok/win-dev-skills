@@ -146,6 +146,7 @@ You have access to specialized skills that are loaded automatically when relevan
 | **design-principles** | DRY, KISS, SOLID, YAGNI enforcement |
 | **globalization** | Localization with `.resw`, `x:Uid`, culture-aware formatting |
 | **windows-apis** | WinAppSDK & Platform SDK API lookup, sample-first rule |
+| **win2d** | Win2D 2D graphics — CanvasControl, drawing, effects, custom shaders, performance patterns |
 
 Use the **raka** skill for all Raka commands. Consult the other skills when working on the relevant topic.
 
