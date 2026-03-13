@@ -213,7 +213,7 @@ try {
     $dotnetVer = dotnet --version 2>$null
     Write-Host "  [OK] .NET SDK ($dotnetVer)" -ForegroundColor Green
 } catch {
-    Write-Host "  [!] .NET SDK not found" -ForegroundColor Yellow
+    Write-Host "  [!] .NET SDK not found" -ForegroundColor Red
     Write-Host "      Required for NuGet package management and WinUI 3 templates." -ForegroundColor Gray
     $installDotnet = Read-Host "      Install .NET SDK via winget? (Y/N)"
     if ($installDotnet -eq 'Y' -or $installDotnet -eq 'y') {
@@ -225,10 +225,16 @@ try {
             $dotnetAvailable = $true
             Write-Host "  [OK] .NET SDK installed" -ForegroundColor Green
         } catch {
-            Write-Host "  [WARN] .NET SDK installed but not on PATH yet. Open a new terminal." -ForegroundColor Yellow
+            Write-Host "  [FAIL] .NET SDK installed but not on PATH yet." -ForegroundColor Red
+            Write-Host "         Open a new terminal and re-run this script." -ForegroundColor Red
         }
-    } else {
-        Write-Host "  [WARN] Skipping .NET SDK -- NuGet source and templates steps will be skipped" -ForegroundColor Yellow
+    }
+
+    if (-not $dotnetAvailable) {
+        Write-Host ""
+        Write-Host "  .NET SDK is required. Install it from https://dotnet.microsoft.com/download" -ForegroundColor Red
+        Write-Host "  or run: winget install Microsoft.DotNet.SDK.9" -ForegroundColor Red
+        exit 1
     }
 }
 Write-Host ""
@@ -386,22 +392,17 @@ Write-Host ""
 Write-Host "[3/5] Registering NuGet package source..." -ForegroundColor Cyan
 Write-Host ""
 
-if (-not $dotnetAvailable) {
-    Write-Host "[SKIP] .NET SDK not available - skipping NuGet source registration" -ForegroundColor Yellow
-    Write-Host "  Run manually later: dotnet nuget add source `"$NugetsTarget`" --name `"WinApp-Dev`"" -ForegroundColor Yellow
+$sourceName = "WinApp-Dev"
+$existingSources = dotnet nuget list source 2>$null
+if ($existingSources -match $sourceName) {
+    Write-Host "[OK] NuGet source '$sourceName' is already registered" -ForegroundColor Green
 } else {
-    $sourceName = "WinApp-Dev"
-    $existingSources = dotnet nuget list source 2>$null
-    if ($existingSources -match $sourceName) {
-        Write-Host "[OK] NuGet source '$sourceName' is already registered" -ForegroundColor Green
-    } else {
-        try {
-            dotnet nuget add source $NugetsTarget --name $sourceName 2>$null
-            Write-Host "[OK] Registered NuGet source: $sourceName -> $NugetsTarget" -ForegroundColor Green
-        } catch {
-            Write-Warning "Could not register NuGet source automatically."
-            Write-Host "  Run manually: dotnet nuget add source `"$NugetsTarget`" --name `"$sourceName`"" -ForegroundColor Yellow
-        }
+    try {
+        dotnet nuget add source $NugetsTarget --name $sourceName 2>$null
+        Write-Host "[OK] Registered NuGet source: $sourceName -> $NugetsTarget" -ForegroundColor Green
+    } catch {
+        Write-Warning "Could not register NuGet source automatically."
+        Write-Host "  Run manually: dotnet nuget add source `"$NugetsTarget`" --name `"$sourceName`"" -ForegroundColor Yellow
     }
 }
 Write-Host ""
@@ -412,22 +413,20 @@ Write-Host ""
 Write-Host "[4/5] Checking WinUI 3 project templates..." -ForegroundColor Cyan
 Write-Host ""
 
-if (-not $dotnetAvailable) {
-    Write-Host "[SKIP] .NET SDK not available - skipping template installation" -ForegroundColor Yellow
-} else {
-    $templateNupkg = Get-ChildItem -Path $NugetsTarget -Filter "Microsoft.WindowsAppSDK.WinUI.CSharp.Templates.*.nupkg" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($templateNupkg) {
-        $existingTemplates = dotnet new list 2>$null
-        if ($existingTemplates -match "winui") {
-            Write-Host "[OK] WinUI 3 templates already installed" -ForegroundColor Green
-        } else {
-            Write-Host "  Installing WinUI 3 templates..." -ForegroundColor Blue
-            dotnet new install $templateNupkg.FullName 2>$null
-            Write-Host "[OK] WinUI 3 templates installed" -ForegroundColor Green
-        }
-    } else {
-        Write-Host "[SKIP] WinUI template package not found in bundle - skipping" -ForegroundColor Yellow
+$templatePkgName = "Microsoft.WindowsAppSDK.WinUI.CSharp.Templates"
+$templateNupkg = Get-ChildItem -Path $NugetsTarget -Filter "$templatePkgName.*.nupkg" -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($templateNupkg) {
+    # Always uninstall existing templates first to avoid version conflicts
+    $existingTemplates = dotnet new list 2>$null
+    if ($existingTemplates -match "winui") {
+        Write-Host "  Removing existing WinUI 3 templates..." -ForegroundColor Gray
+        dotnet new uninstall $templatePkgName 2>$null | Out-Null
     }
+    Write-Host "  Installing WinUI 3 templates..." -ForegroundColor Blue
+    dotnet new install $templateNupkg.FullName 2>$null
+    Write-Host "[OK] WinUI 3 templates installed" -ForegroundColor Green
+} else {
+    Write-Host "[SKIP] WinUI template package not found in bundle - skipping" -ForegroundColor Yellow
 }
 Write-Host ""
 
