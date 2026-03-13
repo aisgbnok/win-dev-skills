@@ -94,6 +94,8 @@ $RepoRoot = Split-Path $ScriptDir -Parent
 $PluginDir = Join-Path $RepoRoot ".github\plugin"
 $InstallScript = Join-Path $ScriptDir "install.ps1"
 $InstallCmd = Join-Path $ScriptDir "install.cmd"
+$UninstallScript = Join-Path $ScriptDir "uninstall.ps1"
+$UninstallCmd = Join-Path $ScriptDir "uninstall.cmd"
 
 $BundleName = "win-dev-skills-v$Version"
 $StagingDir = Join-Path $RepoRoot "staging\$BundleName"
@@ -425,10 +427,16 @@ Write-Host "  Copying plugin..." -ForegroundColor Gray
 Copy-Item $PluginDir (Join-Path $StagingDir "plugin") -Recurse -Force
 
 # Copy install scripts
-Write-Host "  Copying install scripts..." -ForegroundColor Gray
+Write-Host "  Copying install/uninstall scripts..." -ForegroundColor Gray
 Copy-Item $InstallScript (Join-Path $StagingDir "install.ps1") -Force
 if (Test-Path $InstallCmd) {
     Copy-Item $InstallCmd (Join-Path $StagingDir "install.cmd") -Force
+}
+if (Test-Path $UninstallScript) {
+    Copy-Item $UninstallScript (Join-Path $StagingDir "uninstall.ps1") -Force
+}
+if (Test-Path $UninstallCmd) {
+    Copy-Item $UninstallCmd (Join-Path $StagingDir "uninstall.cmd") -Force
 }
 
 # Generate bundle README
@@ -442,6 +450,10 @@ Complete toolkit for Windows app development with GitHub Copilot.
 
 1. Double-click ``install.cmd``
 2. Done! No admin required.
+
+## Uninstall
+
+Double-click ``uninstall.cmd`` to remove all installed components.
 
 ## What's Included
 
@@ -493,7 +505,7 @@ foreach ($f in $nugetFiles) {
     Write-Host "    nugets/$($f.Name) ($([math]::Round($f.Length / 1MB, 1)) MB)" -ForegroundColor Gray
 }
 Write-Host "    plugin/ (agents + skills)" -ForegroundColor Gray
-Write-Host "    install.ps1 + install.cmd" -ForegroundColor Gray
+Write-Host "    install.ps1 + install.cmd + uninstall.ps1 + uninstall.cmd" -ForegroundColor Gray
 Write-Host "    README.md" -ForegroundColor Gray
 Write-Host ""
 
