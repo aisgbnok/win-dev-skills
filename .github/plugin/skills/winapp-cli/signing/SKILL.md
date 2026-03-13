@@ -91,6 +91,11 @@ Note: The `package` command can sign automatically when you pass `--cert`, so yo
 - Use `--timestamp` when signing production builds so the signature survives certificate expiration
 - You can also use the shorthand: `winapp package ./dist --generate-cert --install-cert` to do everything in one command
 
+## Related skills
+- Need to create a manifest first? See `winapp-manifest` to generate `appxmanifest.xml` with correct publisher info
+- Ready to package? See `winapp-package` to create and sign an MSIX in one step
+- Having issues? See `winapp-troubleshoot` for common error solutions
+
 ## Troubleshooting
 | Error | Cause | Solution |
 |-------|-------|----------|
@@ -111,9 +116,11 @@ Create a self-signed certificate for local testing only. Publisher must match Ap
 <!-- auto-generated from cli-schema.json -->
 | Option | Description | Default |
 |--------|-------------|---------|
+| `--export-cer` | Export a .cer file (public key only) alongside the .pfx | (none) |
 | `--if-exists` | Behavior when output file exists: 'error' (fail, default), 'skip' (keep existing), or 'overwrite' (replace) | `Error` |
 | `--install` | Install the certificate to the local machine store after generation | (none) |
-| `--manifest` | Path to appxmanifest.xml file to extract publisher information from | (none) |
+| `--json` | Format output as JSON | (none) |
+| `--manifest` | Path to appxmanifest.xml or Package.appxmanifest file to extract publisher information from | (none) |
 | `--output` | Output path for the generated PFX file | (none) |
 | `--password` | Password for the generated PFX file | `password` |
 | `--publisher` | Publisher name for the generated certificate. If not specified, will be inferred from manifest. | (none) |
@@ -134,6 +141,23 @@ Trust a certificate on this machine (requires admin). Run before installing MSIX
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--force` | Force installation even if the certificate already exists | (none) |
+| `--password` | Password for the PFX file | `password` |
+
+### `winapp cert info`
+
+Display certificate details (subject, thumbprint, expiry). Useful for verifying a certificate matches your manifest before signing.
+
+#### Arguments
+<!-- auto-generated from cli-schema.json -->
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `<cert-path>` | Yes | Path to the certificate file (PFX) |
+
+#### Options
+<!-- auto-generated from cli-schema.json -->
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--json` | Format output as JSON | (none) |
 | `--password` | Password for the PFX file | `password` |
 
 ### `winapp sign`

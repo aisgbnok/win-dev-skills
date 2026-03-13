@@ -10,24 +10,6 @@ Use this skill when:
 - **Choosing the right command** for a task
 - **Understanding prerequisites** — what each command needs and what it produces
 
-## Known issues
-
-### Windows APIs fail at runtime (missing debug identity)
-
-**Symptoms:** Windows APIs that require package identity (push notifications, background tasks, share target, startup tasks, Windows AI APIs) throw errors or silently fail, even though the code and `appxmanifest.xml` are correctly configured.
-
-**Cause:** The app process does not have package identity. A standard `.exe` (whether from `dotnet build`, Electron, `cmake`, `cargo build`, `flutter build`, etc.) does **not** have identity by default — it must be explicitly registered.
-
-**Solution:** Always register debug identity after building the app and before launching it. This must be done every time after changing `appxmanifest.xml` or `Assets/`. This step is **mandatory** for any app using identity-requiring Windows APIs — do not skip it.
-
-```powershell
-# For Electron apps:
-npx winapp node add-electron-debug-identity
-
-# For all other frameworks (.NET, C++, Rust, Flutter, Tauri):
-winapp create-debug-identity <path-to-exe>
-```
-
 ## Common errors & solutions
 
 | Error | Cause | Solution |
@@ -57,8 +39,11 @@ Does the project have an appxmanifest.xml?
    │  └─ winapp update
    ├─ Need a dev certificate?
    │  └─ winapp cert generate (then winapp cert install for trust)
-   ├─ Need package identity for debugging?
-   │  └─ winapp create-debug-identity <exe>
+   ├─ Need package identity for debugging? (see [Debugging Guide](https://github.com/microsoft/WinAppCli/blob/main/docs/debugging.md))
+   │  ├─ Exe is in your build output folder? (most frameworks)
+   │  │  └─ winapp run <build-output-dir>
+   │  └─ Exe is separate from app code? (Electron, sparse testing)
+   │     └─ winapp create-debug-identity <exe>
    ├─ Ready to create MSIX installer?
    │  └─ winapp package <build-output> --cert ./devcert.pfx
    ├─ Need to sign an existing file?
@@ -80,6 +65,20 @@ Does the project have an appxmanifest.xml?
 - Projects with NuGet package references (e.g., `.csproj` referencing `Microsoft.Windows.SDK.BuildTools`) can use winapp commands without `winapp.yaml`
 - For Electron projects, use the npm package (`npm install --save-dev @microsoft/winappcli`) which includes Node.js-specific commands under `npx winapp node`
 
+## Debugging approach quick reference
+
+| Goal | Command | Key detail |
+|------|---------|------------|
+| Run with identity (most common) | `winapp run .\build\Debug` | Registers loose layout + launches; add `--with-alias` for console apps |
+| Attach debugger to running app | `winapp run .\build\Debug` → attach to PID | Misses startup code |
+| Register identity, launch manually | `winapp run .\build\Debug --no-launch` | Launch via `start shell:AppsFolder\<AUMID>` or execution alias — **not** the exe directly |
+| F5 startup debugging (IDE launches exe) | `winapp create-debug-identity .\bin\myapp.exe` | Exe has identity regardless of how it's launched; best for debugging activation/startup code |
+| Capture OutputDebugString | `winapp run .\build\Debug --debug-output` | **Blocks other debuggers** — use `--no-launch` if you need VS Code/WinDbg |
+
+> **Visual Studio users:** If you have a packaging project, VS already handles identity and debugging from F5 — you likely don't need winapp for debugging. These workflows are for VS Code, terminal, and frameworks VS doesn't natively package.
+
+For full details, see the [Debugging Guide](https://github.com/microsoft/WinAppCli/blob/main/docs/debugging.md).
+
 ## Prerequisites & state matrix
 
 | Command | Requires | Creates/Modifies |
@@ -92,6 +91,7 @@ Does the project have an appxmanifest.xml?
 | `cert generate` | Nothing (or `appxmanifest.xml` for publisher) | `devcert.pfx` |
 | `cert install` | Certificate file + admin | Machine certificate store |
 | `create-debug-identity` | `appxmanifest.xml` + exe + trusted cert | Registers sparse package with Windows |
+| `run` | Build output folder + `appxmanifest.xml` | Registers loose layout package, launches app |
 | `package` | Build output + `appxmanifest.xml` | `.msix` file |
 | `sign` | File + certificate | Signed file (in-place) |
 | `create-external-catalog` | Directory with executables | `CodeIntegrityExternal.cat` |
@@ -113,6 +113,14 @@ Does the project have an appxmanifest.xml?
 - Full CLI documentation: https://github.com/microsoft/WinAppCli/blob/main/docs/usage.md
 - Framework-specific guides: https://github.com/microsoft/WinAppCli/tree/main/docs/guides
 - File an issue: https://github.com/microsoft/WinAppCli/issues
+
+## Related skills
+- **Setup & init**: `winapp-setup` — adding Windows support to a project
+- **Manifest**: `winapp-manifest` — creating and editing `appxmanifest.xml`
+- **Signing**: `winapp-signing` — certificate generation and management
+- **Packaging**: `winapp-package` — creating MSIX installers
+- **Identity**: `winapp-identity` — enabling package identity for Windows APIs
+- **Frameworks**: `winapp-frameworks` — framework-specific guidance (Electron, .NET, C++, Rust, Flutter, Tauri)
 
 
 ## Command Reference
