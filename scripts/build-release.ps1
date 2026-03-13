@@ -194,8 +194,22 @@ Write-Host ""
 # ============================================================================
 # Clean staging
 # ============================================================================
-if (Test-Path (Join-Path $RepoRoot "staging")) {
-    Remove-Item (Join-Path $RepoRoot "staging") -Recurse -Force
+$stagingRoot = Join-Path $RepoRoot "staging"
+if (Test-Path $stagingRoot) {
+    try {
+        Remove-Item $stagingRoot -Recurse -Force
+    } catch {
+        Write-Host "[WARN] Could not fully clean staging folder (may be open in Explorer)." -ForegroundColor Yellow
+        Write-Host "       Retrying in 2 seconds..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 2
+        try {
+            Remove-Item $stagingRoot -Recurse -Force
+        } catch {
+            Write-Host "       Cleaning individual contents..." -ForegroundColor Yellow
+            Get-ChildItem $stagingRoot -Recurse -Force | Sort-Object { $_.FullName.Length } -Descending | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+            Remove-Item $stagingRoot -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 New-Item -ItemType Directory -Path (Join-Path $StagingDir "tools") -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $StagingDir "nugets") -Force | Out-Null
