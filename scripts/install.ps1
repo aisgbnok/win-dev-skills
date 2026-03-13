@@ -196,9 +196,16 @@ if ($response -ne 'Y' -and $response -ne 'y') {
 Write-Host ""
 
 $ScriptDir = Split-Path $PSCommandPath -Parent
-$ToolsSrcDir = Join-Path $ScriptDir "tools"
-$NugetsDir = Join-Path $ScriptDir "nugets"
-$PluginDir = Join-Path $ScriptDir "plugin"
+
+# Data directories (tools, nugets, plugin) can be siblings of the script
+# or siblings of the script's parent (when script is in a scripts/ subfolder)
+$BundleRoot = $ScriptDir
+if (-not (Test-Path (Join-Path $BundleRoot "tools")) -and (Test-Path (Join-Path (Split-Path $BundleRoot -Parent) "tools"))) {
+    $BundleRoot = Split-Path $BundleRoot -Parent
+}
+$ToolsSrcDir = Join-Path $BundleRoot "tools"
+$NugetsDir = Join-Path $BundleRoot "nugets"
+$PluginDir = Join-Path $BundleRoot "plugin"
 
 # ============================================================================
 # Prerequisites
@@ -357,6 +364,37 @@ if ($userPath -split ";" | Where-Object { $_ -eq $ToolsTarget }) {
 if ($env:PATH -notlike "*$ToolsTarget*") {
     $env:PATH = "$ToolsTarget;$env:PATH"
 }
+
+Write-Host ""
+
+# Copy uninstall scripts to ~/.winui3-agent/ for easy access
+$uninstallPs1Src = Join-Path $ScriptDir "uninstall.ps1"
+if (Test-Path $uninstallPs1Src) {
+    Copy-Item $uninstallPs1Src $AgentDir -Force
+}
+# Generate uninstall.cmd in the agent dir
+$uninstallCmdContent = @"
+@echo off
+echo.
+echo ================================================
+echo  Windows Development Skills - Uninstall
+echo ================================================
+echo.
+powershell.exe -ExecutionPolicy Bypass -File "%~dp0uninstall.ps1"
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo Uninstall completed successfully!
+    echo Open a NEW terminal for PATH changes to take effect.
+) else (
+    echo.
+    echo Uninstall encountered an error.
+    echo Please check the output above for details.
+)
+echo.
+pause
+"@
+Set-Content -Path (Join-Path $AgentDir "uninstall.cmd") -Value $uninstallCmdContent -NoNewline
+Write-Host "[OK] Uninstall scripts placed in $AgentDir" -ForegroundColor Green
 
 Write-Host ""
 
