@@ -355,6 +355,21 @@ if ($SkipTemplates) {
             Write-Error "Template csproj not found at: $csprojPath"
         }
 
+        # Override the repo's nuget.config which points to internal ADO feeds.
+        # The template csproj has zero package dependencies, so we only need nuget.org
+        # as a fallback (dotnet pack still checks sources even with no dependencies).
+        $overrideNugetConfig = Join-Path (Split-Path $csprojPath -Parent) "nuget.config"
+        @"
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  </packageSources>
+</configuration>
+"@ | Set-Content $overrideNugetConfig -Encoding UTF8
+        Write-Host "  Overriding nuget.config to use public sources only" -ForegroundColor Gray
+
         $packOutputDir = Join-Path $DownloadDir "template-pack"
         Write-Host "  Packing template NuGet..." -ForegroundColor Gray
         $packOutput = dotnet pack $csprojPath -c Release -o $packOutputDir 2>&1
