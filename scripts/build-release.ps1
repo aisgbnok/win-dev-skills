@@ -9,17 +9,18 @@
     Artifact sources:
     - WinApp CLI: Portable exe + NuGet from GitHub Actions artifacts on microsoft/winappCli (requires gh auth)
     - Raka CLI: Portable exe + NuGet from latest GitHub Release on nmetulev/raka (no auth needed)
-    - WinUI Templates: NuGet from Azure DevOps internal feed (requires az login)
+    - WinUI Templates: Built from source (microsoft/WindowsAppSDK on GitHub)
 
     Prerequisites:
     - GitHub CLI (gh) installed and authenticated (for winapp CLI artifacts + publishing)
-    - Azure CLI (az) installed and logged in (for WinUI template NuGet, optional)
+    - .NET SDK (dotnet) installed (for building WinUI templates, unless -SkipTemplates)
+    - Git (for cloning WindowsAppSDK repo to build templates)
 .PARAMETER Version
     Release version (e.g., "0.3.0"). If omitted, auto-bumps the patch version from the latest release.
 .PARAMETER WinAppPrNumber
     WinApp CLI PR number to pull artifacts from. Default: 341.
 .PARAMETER SkipTemplates
-    Skip downloading WinUI templates from ADO feed.
+    Skip building WinUI templates from source.
 .PARAMETER Publish
     Publish the zip to GitHub Releases. Off by default - the script just creates the zip.
 .EXAMPLE
@@ -103,9 +104,10 @@ $ZipPath = Join-Path $RepoRoot "staging\$BundleName.zip"
 $WinAppRepo = "microsoft/winappCli"
 $RakaRepo = "nmetulev/raka"
 
-# ADO feed for WinUI templates
-$AdoFeedUrl = "https://pkgs.dev.azure.com/microsoft/ProjectReunion/_packaging/Project.Reunion.nuget.internal/nuget/v3/index.json"
-$TemplatePackageName = "Microsoft.WindowsAppSDK.WinUI.CSharp.Templates"
+# WindowsAppSDK repo for WinUI templates
+$TemplatesRepo = "https://github.com/microsoft/WindowsAppSDK.git"
+$TemplatesBranch = "user/muyuanli/dotnetnewtemplate"
+$TemplatesCsproj = "dev/VSIX/DotnetNewTemplates/WinAppSdk.CSharp.DotnetNewTemplates.csproj"
 
 # ============================================================================
 # Prerequisites - verify everything before doing any work
@@ -134,30 +136,20 @@ if (Get-Command gh -ErrorAction SilentlyContinue) {
     $prereqFailed = $true
 }
 
-# --- Azure CLI (required for ADO template feed unless -SkipTemplates) ---
-$azAvailable = $false
+# --- Git (required for cloning WindowsAppSDK to build templates unless -SkipTemplates) ---
 if (-not $SkipTemplates) {
-    if (Get-Command az -ErrorAction SilentlyContinue) {
-        $account = $null
-        try { $account = az account show 2>$null | ConvertFrom-Json } catch { }
-        if ($account) {
-            $azAvailable = $true
-            Write-Host "  [OK] Azure CLI (az) - installed and authenticated as $($account.user.name)" -ForegroundColor Green
-        } else {
-            Write-Host "  [FAIL] Azure CLI (az) - installed but NOT logged in" -ForegroundColor Red
-            Write-Host "         Run: az login   (or use -SkipTemplates to skip)" -ForegroundColor Yellow
-            $prereqFailed = $true
-        }
+    if (Get-Command git -ErrorAction SilentlyContinue) {
+        Write-Host "  [OK] Git - installed" -ForegroundColor Green
     } else {
-        Write-Host "  [FAIL] Azure CLI (az) - not found" -ForegroundColor Red
-        Write-Host "         Install with: winget install Microsoft.AzureCLI   (or use -SkipTemplates to skip)" -ForegroundColor Yellow
+        Write-Host "  [FAIL] Git - not found" -ForegroundColor Red
+        Write-Host "         Install with: winget install Git.Git   (or use -SkipTemplates to skip)" -ForegroundColor Yellow
         $prereqFailed = $true
     }
 } else {
-    Write-Host "  [--]  Azure CLI (az) - skipped (-SkipTemplates)" -ForegroundColor DarkGray
+    Write-Host "  [--]  Git - skipped (-SkipTemplates)" -ForegroundColor DarkGray
 }
 
-# --- .NET SDK (required for template restore unless -SkipTemplates) ---
+# --- .NET SDK (required for building templates unless -SkipTemplates) ---
 if (-not $SkipTemplates) {
     if (Get-Command dotnet -ErrorAction SilentlyContinue) {
         $dotnetVersion = dotnet --version 2>$null
@@ -336,151 +328,65 @@ Write-Host "  [OK] Raka CLI artifacts downloaded" -ForegroundColor Green
 Write-Host ""
 
 # ============================================================================
-# Step 3: Download WinUI Templates from ADO NuGet feed (requires az login)
+# Step 3: Build WinUI Templates from source
 # ============================================================================
 if ($SkipTemplates) {
     Write-Host "[3/4] Skipping WinUI templates (--SkipTemplates)" -ForegroundColor Yellow
     Write-Host ""
 } else {
-    Write-Host "[3/4] Downloading WinUI templates from ADO feed..." -ForegroundColor Cyan
+    Write-Host "[3/4] Building WinUI templates from source..." -ForegroundColor Cyan
     Write-Host ""
 
-    $templateDownloaded = $false
+    $templateBuilt = $false
 
-    if ($azAvailable) {
-        try {
-            # Ensure we're logged in (may have been detected as not-logged-in in prereqs)
-            $account = $null
-            try { $account = az account show 2>$null | ConvertFrom-Json } catch { }
-            if (-not $account) {
-                Write-Host "  [INFO] Not logged in to Azure. Launching browser login..." -ForegroundColor Yellow
-                az login 2>$null | Out-Null
-            }
-            Write-Host "  [OK] Azure CLI authenticated" -ForegroundColor Green
-
-            # Use az artifacts to download the latest version of the template package
-            Write-Host "  Searching for latest $TemplatePackageName..." -ForegroundColor Gray
-
-            # Install/update credential provider - use Net8 (arch-independent) to support ARM64
-            $credProviderDir = Join-Path $env:USERPROFILE ".nuget\plugins\netcore\CredentialProvider.Microsoft"
-            $needsInstall = -not (Test-Path $credProviderDir)
-
-            if (-not $needsInstall) {
-                # Verify existing provider works by checking for architecture mismatch
-                $hostPolicy = Join-Path $credProviderDir "hostpolicy.dll"
-                if (Test-Path $hostPolicy) {
-                    # Self-contained (win-x64) provider has hostpolicy.dll - won't work on ARM64
-                    # Net8 provider does NOT have hostpolicy.dll, it uses the system .NET runtime
-                    if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') {
-                        $needsInstall = $true
-                        Write-Host "  Credential provider is x64 self-contained - reinstalling for ARM64 compat..." -ForegroundColor Yellow
-                    }
-                }
-            }
-
-            if ($needsInstall) {
-                Write-Host "  Installing Azure Artifacts credential provider (Net8)..." -ForegroundColor Gray
-                # Remove old install to avoid conflicts
-                $pluginsRoot = Join-Path $env:USERPROFILE ".nuget\plugins"
-                if (Test-Path $pluginsRoot) {
-                    Remove-Item $pluginsRoot -Recurse -Force -ErrorAction SilentlyContinue
-                }
-                # Download and extract the Net8 (arch-independent) credential provider
-                $cpZipUrl = ($rel = Invoke-RestMethod "https://api.github.com/repos/microsoft/artifacts-credprovider/releases/latest" -Headers @{'User-Agent'='win-dev-skills'}).assets |
-                    Where-Object { $_.name -eq 'Microsoft.Net8.NuGet.CredentialProvider.zip' } |
-                    Select-Object -First 1 -ExpandProperty browser_download_url
-                $cpZip = Join-Path $DownloadDir "credprovider-net8.zip"
-                Invoke-WebRequest -Uri $cpZipUrl -OutFile $cpZip
-                Expand-Archive -Path $cpZip -DestinationPath (Join-Path $env:USERPROFILE ".nuget") -Force
-                Write-Host "  [OK] Credential provider installed (Net8)" -ForegroundColor Green
-            }
-
-            # Download using dotnet restore into a temp project
-            $tempProjDir = Join-Path $DownloadDir "template-download"
-            New-Item -ItemType Directory -Path $tempProjDir -Force | Out-Null
-
-            # Create a minimal project that references the template package
-            $tempCsproj = @"
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <RestoreSources>$AdoFeedUrl;https://api.nuget.org/v3/index.json</RestoreSources>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="$TemplatePackageName" Version="*-*" />
-  </ItemGroup>
-</Project>
-"@
-            Set-Content -Path (Join-Path $tempProjDir "temp.csproj") -Value $tempCsproj
-
-            Write-Host "  Restoring template package (may prompt for auth)..." -ForegroundColor Gray
-            $env:NUGET_CREDENTIALPROVIDER_SESSIONTOKENCACHE_ENABLED = "true"
-            $restoreOutput = dotnet restore (Join-Path $tempProjDir "temp.csproj") --interactive 2>&1
-            $restoreExitCode = $LASTEXITCODE
-
-            if ($restoreExitCode -ne 0) {
-                Write-Host "  [FAIL] dotnet restore failed (exit code $restoreExitCode):" -ForegroundColor Red
-                # Show the last lines which typically contain the error
-                $errorLines = ($restoreOutput | Out-String).Trim() -split "`n" | Select-Object -Last 15
-                foreach ($line in $errorLines) {
-                    Write-Host "         $line" -ForegroundColor Red
-                }
-            } else {
-                # Find the downloaded nupkg in the global packages cache
-                $pkgCacheDir = Join-Path $env:USERPROFILE ".nuget\packages\$($TemplatePackageName.ToLower())"
-                $templatePkgs = Get-ChildItem -Path $pkgCacheDir -Directory -ErrorAction SilentlyContinue |
-                    Sort-Object Name -Descending | Select-Object -First 1
-
-                if (-not $templatePkgs) {
-                    Write-Host "  [FAIL] Restore succeeded but package not found in cache: $pkgCacheDir" -ForegroundColor Red
-                } else {
-                    $pkgVersion = $templatePkgs.Name
-                    Write-Host "  Found version $pkgVersion in NuGet cache" -ForegroundColor Gray
-
-                    # NuGet cache stores expanded packages - look for .nupkg file
-                    $nupkgFile = Get-ChildItem -Path $templatePkgs.FullName -Filter "*.nupkg" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-
-                    if ($nupkgFile) {
-                        Copy-Item $nupkgFile.FullName (Join-Path $StagingDir "nugets") -Force
-                        Write-Host "    - $($nupkgFile.Name)" -ForegroundColor Gray
-                        $templateDownloaded = $true
-                    } else {
-                        # Try the well-known lowercased path
-                        $nupkgInCache = Join-Path $templatePkgs.FullName "$($TemplatePackageName.ToLower()).$pkgVersion.nupkg"
-                        if (Test-Path $nupkgInCache) {
-                            Copy-Item $nupkgInCache (Join-Path $StagingDir "nugets") -Force
-                            Write-Host "    - $(Split-Path $nupkgInCache -Leaf)" -ForegroundColor Gray
-                            $templateDownloaded = $true
-                        } else {
-                            # Try the http-cache as a fallback
-                            $httpCache = Join-Path $env:LOCALAPPDATA "NuGet\v3-cache"
-                            $cachedNupkg = Get-ChildItem -Path $httpCache -Filter "$($TemplatePackageName.ToLower())*.nupkg" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-                            if ($cachedNupkg) {
-                                Copy-Item $cachedNupkg.FullName (Join-Path $StagingDir "nugets") -Force
-                                Write-Host "    - $($cachedNupkg.Name)" -ForegroundColor Gray
-                                $templateDownloaded = $true
-                            } else {
-                                Write-Host "  [FAIL] Restore succeeded but .nupkg not found in cache or http-cache" -ForegroundColor Red
-                                Write-Host "         Cache dir: $($templatePkgs.FullName)" -ForegroundColor Red
-                                Write-Host "         Contents: $(Get-ChildItem $templatePkgs.FullName -Recurse | Select-Object -ExpandProperty Name)" -ForegroundColor Red
-                            }
-                        }
-                    }
-                }
-            }
-        } catch {
-            Write-Host "  [FAIL] Template download failed: $_" -ForegroundColor Red
+    try {
+        # Clone the repo (shallow, single branch) into a temp directory
+        $templateCloneDir = Join-Path $DownloadDir "WindowsAppSDK"
+        Write-Host "  Cloning microsoft/WindowsAppSDK ($TemplatesBranch)..." -ForegroundColor Gray
+        git clone --depth 1 --branch $TemplatesBranch $TemplatesRepo $templateCloneDir --quiet 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "git clone failed (exit code $LASTEXITCODE)"
         }
-    } else {
-        Write-Host "  [FAIL] Azure CLI not available - cannot download from ADO feed" -ForegroundColor Red
+        Write-Host "  [OK] Repository cloned" -ForegroundColor Green
+
+        # Build the NuGet package
+        $csprojPath = Join-Path $templateCloneDir $TemplatesCsproj
+        if (-not (Test-Path $csprojPath)) {
+            Write-Error "Template csproj not found at: $csprojPath"
+        }
+
+        $packOutputDir = Join-Path $DownloadDir "template-pack"
+        Write-Host "  Packing template NuGet..." -ForegroundColor Gray
+        $packOutput = dotnet pack $csprojPath -c Release -o $packOutputDir 2>&1
+        $packExitCode = $LASTEXITCODE
+
+        if ($packExitCode -ne 0) {
+            Write-Host "  [FAIL] dotnet pack failed (exit code $packExitCode):" -ForegroundColor Red
+            $errorLines = ($packOutput | Out-String).Trim() -split "`n" | Select-Object -Last 15
+            foreach ($line in $errorLines) {
+                Write-Host "         $line" -ForegroundColor Red
+            }
+        } else {
+            # Find the generated .nupkg
+            $templateNupkg = Get-ChildItem -Path $packOutputDir -Filter "*.nupkg" | Select-Object -First 1
+            if ($templateNupkg) {
+                Copy-Item $templateNupkg.FullName (Join-Path $StagingDir "nugets") -Force
+                Write-Host "    - $($templateNupkg.Name) ($([math]::Round($templateNupkg.Length / 1KB, 1)) KB)" -ForegroundColor Gray
+                $templateBuilt = $true
+            } else {
+                Write-Host "  [FAIL] dotnet pack succeeded but no .nupkg found in output directory" -ForegroundColor Red
+            }
+        }
+    } catch {
+        Write-Host "  [FAIL] Template build failed: $_" -ForegroundColor Red
     }
 
-    if (-not $templateDownloaded) {
+    if (-not $templateBuilt) {
         Write-Host ""
-        Write-Error "Failed to download WinUI template NuGet. Use -SkipTemplates to skip, or fix the error above."
+        Write-Error "Failed to build WinUI template NuGet. Use -SkipTemplates to skip, or fix the error above."
         exit 1
     } else {
-        Write-Host "  [OK] WinUI template downloaded" -ForegroundColor Green
+        Write-Host "  [OK] WinUI template built from source" -ForegroundColor Green
     }
     Write-Host ""
 }

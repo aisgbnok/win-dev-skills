@@ -45,9 +45,9 @@ The `build-release.ps1` script downloads artifacts from source repositories, bun
 
 ### Prerequisites
 
-- [GitHub CLI](https://cli.github.com/) (`gh`) installed and authenticated — downloads WinApp CLI artifacts from Actions and publishes releases
-- [Azure CLI](https://learn.microsoft.com/cli/azure/) (`az`) installed and logged in — downloads WinUI templates from the internal ADO NuGet feed (use `-SkipTemplates` to skip)
-- [.NET SDK](https://dotnet.microsoft.com/download) (`dotnet`) — used for template package restore
+- [GitHub CLI](https://cli.github.com/) (`gh`) installed and authenticated -- downloads WinApp CLI artifacts from Actions and publishes releases
+- [.NET SDK](https://dotnet.microsoft.com/download) (`dotnet`) -- used to build WinUI template NuGet from source
+- [Git](https://git-scm.com/) -- used to clone the WindowsAppSDK repo for template builds
 
 ### Artifact sources
 
@@ -55,7 +55,7 @@ The `build-release.ps1` script downloads artifacts from source repositories, bun
 |---|---|---|
 | WinApp CLI (exe + NuGet) | GitHub Actions artifacts from [microsoft/winappCli](https://github.com/microsoft/winappCli) PR | Yes (`gh`) |
 | Raka CLI (exe + NuGet) | Latest release from [nmetulev/raka](https://github.com/nmetulev/raka) | No |
-| WinUI Templates | ADO internal NuGet feed | Yes (`az`) |
+| WinUI Templates | Built from [microsoft/WindowsAppSDK](https://github.com/microsoft/WindowsAppSDK) source | No |
 
 ### Usage
 
@@ -69,7 +69,7 @@ The `build-release.ps1` script downloads artifacts from source repositories, bun
 # Build and publish to GitHub Releases
 .\scripts\build-release.ps1 -Publish
 
-# Skip templates if you don't have ADO access
+# Skip templates if you don't have .NET SDK
 .\scripts\build-release.ps1 -SkipTemplates
 ```
 
@@ -77,7 +77,7 @@ The script will:
 1. Verify all prerequisites are met (tools installed, authenticated)
 2. Download WinApp CLI portable executables + NuGet from the latest successful build on the PR branch
 3. Download Raka CLI portable executables + NuGet from the latest GitHub release
-4. Download WinUI templates from the ADO feed
+4. Build WinUI templates from source (clones WindowsAppSDK, runs dotnet pack)
 5. Bundle everything with the plugin and install script into a zip
 6. Optionally publish to GitHub Releases (with `-Publish`)
 
