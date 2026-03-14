@@ -185,8 +185,6 @@ Write-Host "  3. Copy NuGet packages and register a NuGet source" -ForegroundCol
 Write-Host "  4. Install WinUI 3 project templates (if included)" -ForegroundColor Gray
 Write-Host "  5. Install Copilot CLI plugin" -ForegroundColor Gray
 Write-Host ""
-Write-Host "No admin privileges required. All changes are user-scoped." -ForegroundColor DarkGray
-Write-Host ""
 
 $response = Read-Host "Proceed with installation? (Y/N)"
 if ($response -ne 'Y' -and $response -ne 'y') {
