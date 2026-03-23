@@ -27,6 +27,32 @@ Verify the tools are installed and available in the path. Do this prior to doing
 
 ---
 
+## Workflow Selection
+
+Every task starts here — pick the right entry point:
+
+| Workflow | When to Use | Skill |
+|----------|-------------|-------|
+| **Create App** | User wants a new app or project | `dev-workflow` → New App Creation section |
+| **Add Feature** | User wants to add functionality to an existing app | `dev-workflow` → Adding Features section |
+| **Fix Errors** | Build failures, crashes, HRESULT errors, unexpected behavior | `dev-workflow` → Error Diagnosis section |
+| **WPF Migration** | User wants to convert a WPF app to WinUI 3 | `wpf-migration` skill |
+
+### Trigger phrases
+- **Create App**: "create a new app", "start a new project", "make a WinUI app", "build me an app"
+- **Add Feature**: "add a button", "implement X", "integrate an API", "create a new page"
+- **Fix Errors**: "fix this error", "why is my build failing", "debug this crash", "app won't launch"
+- **WPF Migration**: "convert from WPF", "migrate to WinUI", "port this WPF app"
+
+### Combined Request (Create + Features)
+If the user describes **both** creating a new app **and** specific features (e.g., "build a photo editor with brightness and contrast sliders"):
+1. First follow the Create App workflow to scaffold and verify a **blank working app**
+2. Then follow the Add Feature workflow **for each feature separately**
+
+⚠️ **Do NOT implement features inline during app creation.** Always scaffold first, verify it builds and runs, then add features one at a time. Skipping this causes broken scaffolds and wasted iterations.
+
+---
+
 ## Development Workflow
 
 Follow this loop for every feature you build:
