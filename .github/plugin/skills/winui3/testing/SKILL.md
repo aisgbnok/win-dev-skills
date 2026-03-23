@@ -3,282 +3,93 @@ name: testing
 description: 'Unit testing standards for WinUI 3 apps — MSTest, Moq, AAA pattern, naming conventions, and coverage goals. Use when writing or modifying tests.'
 ---
 
-# Testing — Unit Tests, Build & Run
+# Testing — Unit Tests for WinUI 3
 
-Every public method and class must have corresponding unit tests. Tests are not optional.
-
----
-
-## 1. Test Framework & Project Setup
-
-### Recommended Stack
-
-| Component | Package | Purpose |
-|---|---|---|
-| Test Framework | `MSTest` | Test runner & assertions |
-| Mocking | `Moq` | Mock dependencies |
-| UI Testing | `Microsoft.Windows.Apps.Test` | WinUI UI automation (optional) |
-
-### Test Project Setup
-
-Create a test project alongside the main project:
-
-```
-<SolutionRoot>/
-  <ProjectName>/           ← Main app project
-  <ProjectName>.Tests/     ← Unit test project
-```
-
-Test project `.csproj` should reference the main project:
-
-```xml
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <!-- Match TargetFramework to the main project's .csproj -->
-    <TargetFramework><!-- same as the main project's .csproj TargetFramework --></TargetFramework>
-    <UseWinUI>true</UseWinUI>
-    <Nullable>enable</Nullable>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <!-- Use latest stable versions; do not hard-code version numbers in instructions -->
-    <PackageReference Include="MSTest.TestAdapter" Version="*" />
-    <PackageReference Include="MSTest.TestFramework" Version="*" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="*" />
-    <PackageReference Include="Moq" Version="*" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\<ProjectName>\<ProjectName>.csproj" />
-  </ItemGroup>
-</Project>
-```
+Every public method and class must have corresponding unit tests.
 
 ---
 
-## 2. Test Writing Rules
+## Quick Reference
+
+- **Stack:** MSTest + Moq. Test project: `<ProjectName>.Tests/`
+- **Pattern:** Arrange → Act → Assert (AAA) in every test
+- **Naming:** `MethodName_Scenario_ExpectedResult`
+- **Coverage:** 80%+ on ViewModels/Services, 100% on helpers
+- **Run:** `dotnet test -c Debug -p:Platform=x64`
+- **Filter:** `--filter "FullyQualifiedName~MainViewModelTests"`
+
+---
+
+## Key Rules
 
 ### What to Test
-- **All public methods** in ViewModels, Services, Helpers, and Models.
-- **Edge cases** — null inputs, empty collections, boundary values.
-- **Error paths** — exception handling, invalid state transitions.
-- **Business logic** — calculations, transformations, state management.
+- All public methods in ViewModels, Services, Helpers, Models
+- Edge cases: null inputs, empty collections, boundary values
+- Error paths: exception handling, invalid state transitions
 
-### What NOT to Test (Directly)
-- XAML layout / visual rendering (use UI tests for that).
-- Framework internals (e.g., `InitializeComponent()`).
-- Private methods — test them indirectly through public methods.
+### What NOT to Test
+- XAML layout / visual rendering (use UI tests)
+- Framework internals (`InitializeComponent()`)
+- Private methods — test indirectly through public API
 
-### Test Naming Convention
+### Test Naming
+Use `MethodName_Scenario_ExpectedResult` — e.g., `CalculateTotal_WithEmptyCart_ReturnsZero`.
 
-Use the pattern: `MethodName_Scenario_ExpectedResult`
+### AAA Structure
+Every test follows Arrange → Act → Assert. Use `Mock<T>` from Moq for dependencies. Always `await` async methods with `async Task` return type.
 
-```csharp
-[TestMethod]
-public void CalculateTotal_WithEmptyCart_ReturnsZero() { }
+### File Structure — Mirror Main Project
+One test class per class under test. Mirror folder structure: `ViewModels/MainViewModel.cs` → `ViewModels/MainViewModelTests.cs`.
 
-[TestMethod]
-public void LoadDataAsync_WhenServiceThrows_SetsErrorState() { }
-
-[TestMethod]
-public async Task SaveAsync_WithValidInput_ReturnsTrue() { }
-```
-
-### Test Structure (AAA Pattern)
-
-Every test follows **Arrange → Act → Assert**:
-
-```csharp
-[TestMethod]
-public void Add_TwoPositiveNumbers_ReturnsSum()
-{
-    // Arrange
-    var calculator = new Calculator();
-
-    // Act
-    int result = calculator.Add(2, 3);
-
-    // Assert
-    Assert.AreEqual(5, result);
-}
-```
-
-### ViewModel Testing Example
-
-```csharp
-[TestMethod]
-public async Task LoadItemsAsync_OnSuccess_PopulatesItems()
-{
-    // Arrange
-    var mockService = new Mock<IDataService>();
-    mockService
-        .Setup(s => s.GetItemsAsync())
-        .ReturnsAsync(new List<Item> { new("Test") });
-
-    var viewModel = new MainViewModel(mockService.Object);
-
-    // Act
-    await viewModel.LoadItemsAsync();
-
-    // Assert
-    Assert.AreEqual(1, viewModel.Items.Count);
-    Assert.IsFalse(viewModel.IsLoading);
-}
-```
-
----
-
-## 3. Test Organization
-
-### File Structure
-
-Mirror the main project's folder structure (defined in [winui-best-practices](winui-best-practices.instructions.md)) in the test project. As the main project grows with subfolders under `ViewModels/`, `Services/`, `Views/`, etc., the test project must grow organically in the same way. This alignment enables on-demand test runs scoped to the area you changed:
-
-```
-<ProjectName>/                    <ProjectName>.Tests/
-  Models/                           Models/
-    User.cs                           UserTests.cs
-  ViewModels/                       ViewModels/
-    MainViewModelTests.cs             MainViewModelTests.cs
-    Settings/                         Settings/
-      ThemeViewModel.cs                 ThemeViewModelTests.cs
-  Services/                         Services/
-    DataService.cs                    DataServiceTests.cs
-    Auth/                             Auth/
-      AuthService.cs                    AuthServiceTests.cs
-  Helpers/                          Helpers/
-    StringHelper.cs                   StringHelperTests.cs
-  Converters/                       Converters/
-    BoolToVisibilityConverter.cs      BoolToVisibilityConverterTests.cs
-```
-
-### One Test Class per Class Under Test
-
-```csharp
-namespace <RootNamespace>.Tests.ViewModels;
-
-[TestClass]
-public class MainViewModelTests
-{
-    // All tests for MainViewModel go here
-}
-```
-
-### Running Tests On-Demand
-
-After a change, run only the tests related to the affected area instead of the full suite:
+### Running Tests
 
 ```powershell
-# Run from the test project folder
 cd <ProjectName>.Tests
 
-# Run tests for a specific class
+# Specific class
 dotnet test -c Debug -p:Platform=x64 --filter "FullyQualifiedName~MainViewModelTests"
 
-# Run a single test
-dotnet test -c Debug -p:Platform=x64 --filter "FullyQualifiedName~MainViewModelTests.LoadItemsAsync_OnSuccess_PopulatesItems"
-
-# Run all tests in a namespace (e.g., all ViewModel tests)
+# Specific namespace
 dotnet test -c Debug -p:Platform=x64 --filter "FullyQualifiedName~Tests.ViewModels"
 
-# Run tests in a subfolder namespace (e.g., only Settings ViewModels)
-dotnet test -c Debug -p:Platform=x64 --filter "FullyQualifiedName~Tests.ViewModels.Settings"
-
-# Run the full suite (for cross-cutting changes)
+# Full suite
 dotnet test -c Debug -p:Platform=x64
 ```
-```
 
----
+### Agent Workflow
 
-## 4. Test-Specific Commands
+1. Implement feature/fix in main project
+2. Write unit tests for every new/changed public method
+3. Build — fix all errors
+4. Run tests — ensure all pass
+5. When modifying existing code: run existing tests first for baseline
 
-For general build and register commands, see **Build, Run & Deploy** in `Agents.md`.
-For on-demand test filtering, see **Running Tests On-Demand** above.
-
-Below are additional test commands:
-
-### Build Only the Test Project
-
-```powershell
-cd <ProjectName>.Tests
-dotnet build -c Debug -p:Platform=x64
-```
-
-### Run Tests with Verbose Output
-
-```powershell
-dotnet test -c Debug -p:Platform=x64 --verbosity normal
-```
-
----
-
-## 5. Agent Workflow for Tests
-
-When you write or modify code, follow this sequence:
-
-1. **Implement the feature or fix** in the main project.
-2. **Write unit tests** for every new/changed public method.
-3. **Build** — see **Build, Run & Deploy** in `Agents.md`. Fix all errors and warnings.
-4. **Run tests** — `dotnet test -c Debug -p:Platform=x64` (from the test project folder) and ensure all pass.
-5. **Review** — Confirm tests cover the happy path, edge cases, and error cases.
-
-### When Modifying Existing Code
-
-1. **Run existing tests first** to establish a baseline.
-2. Make the code change.
-3. **Run tests again** — fix any failures.
-4. **Add new tests** if the change introduces new behaviour.
-
-### Coverage Goals
-
-- Aim for **80%+ code coverage** on business logic (ViewModels, Services).
-- 100% coverage of utility/helper methods.
-- UI code-behind is exempt from unit test coverage (tested via integration/UI tests).
-
----
-
-## 6. Common Test Pitfalls
+### Common Pitfalls
 
 | Pitfall | Fix |
-|---|---|
+|---------|-----|
 | Test depends on another test's state | Each test must be fully independent |
 | Testing multiple things in one test | One assertion per logical concept |
-| Tests pass but don't actually verify anything | Always have meaningful assertions |
-| Mocking too much | Mock only external dependencies, not the class under test |
-| Testing implementation details | Test behaviour and outcomes, not internal method calls |
-| Async tests without `await` | Always `await` async methods and use `async Task` return type |
+| Mocking too much | Mock only external dependencies |
+| Testing implementation details | Test behaviour and outcomes |
+| Async tests without `await` | Always `await` and use `async Task` |
 
 ---
 
-## Validation
-
-- Build & run tests — see **Build, Run & Deploy** in `Agents.md`.
-- Verify all tests pass — zero failures, zero skipped without justification.
-- Verify naming follows `MethodName_Scenario_ExpectedResult` pattern.
-- Verify AAA structure (Arrange/Act/Assert) in every test method.
-- Confirm coverage goals: 80%+ on ViewModels/Services, 100% on helpers.
-
-### Verification Checklist
+## Verification Checklist
 
 - [ ] All ViewModels have corresponding unit tests
-- [ ] AAA pattern (Arrange/Act/Assert) followed in every test
-- [ ] Edge cases covered (null inputs, empty collections, boundary values)
-- [ ] Dependencies are mocked via interfaces (Moq)
-- [ ] Test names follow `MethodName_Scenario_ExpectedResult` convention
+- [ ] AAA pattern in every test
+- [ ] Edge cases covered (null, empty, boundary)
+- [ ] Dependencies mocked via interfaces (Moq)
+- [ ] Names follow `MethodName_Scenario_ExpectedResult`
 
----
+## References
 
-## Must Read & Research
+- [Detailed testing patterns, project setup, and code examples](references/testing-patterns.md)
 
-> **Agent Rule:** Before writing or modifying tests, you **must** fetch and review the relevant references below using `fetch_webpage`. Apply what you learn — do not skip this step.
+## External Resources
 
-| # | Reference | When to consult |
-|---|---|---|
-| 1 | [Unit testing C# with MSTest](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-with-mstest) | Setting up test project, writing first tests, MSTest attributes |
-| 2 | [Unit testing best practices .NET](https://learn.microsoft.com/en-us/dotnet/core/testing/unit-testing-best-practices) | Every time you write tests — naming, structure, AAA pattern |
-| 3 | [Moq Quickstart](https://github.com/devlooped/moq/wiki/Quickstart) | Mocking interfaces, setting up `Returns`/`Throws`, verifying calls |
-| 4 | [FluentAssertions Documentation](https://fluentassertions.com/introduction) | Writing expressive assertions (`Should().Be()`, collections, exceptions) |
-| 5 | [dotnet test CLI](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-test) | Running tests from terminal, filtering, verbosity options |
-| 6 | [Test Explorer in Visual Studio](https://learn.microsoft.com/en-us/visualstudio/test/run-unit-tests-with-test-explorer) | Debugging tests, viewing coverage, understanding test output |
+- [MSTest docs](https://learn.microsoft.com/dotnet/core/testing/unit-testing-with-mstest)
+- [Unit testing best practices](https://learn.microsoft.com/dotnet/core/testing/unit-testing-best-practices)
+- [Moq Quickstart](https://github.com/devlooped/moq/wiki/Quickstart)
