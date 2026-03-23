@@ -3,6 +3,16 @@ name: custom-controls
 description: 'Custom controls and UserControls in WinUI 3 — UserControl vs TemplatedControl, DependencyProperties, template parts, visual states, and styling. Use when creating or modifying reusable controls.'
 ---
 
+## Quick Reference
+
+- **`UserControl` for composite views; `TemplatedControl` (`Control`) for reusable/styleable controls** — `UserControl` cannot be re-templated by consumers.
+- **Expose bindable APIs with `DependencyProperty`** — use the correct owner type in `Register()`; incorrect owner causes silent failures.
+- **TemplatedControls must have a default style in `Themes/Generic.xaml`** — without it, the control renders as invisible.
+- **Null-check template parts in `OnApplyTemplate`** — unsubscribe from previous parts before subscribing to new ones to prevent leaks.
+- **Use `{ThemeResource}` for all colors and brushes** — never hardcode hex values; controls must render correctly in Light, Dark, and High Contrast.
+
+---
+
 # Custom Controls
 
 These rules apply to **every feature and change**. They are not optional add-ons.

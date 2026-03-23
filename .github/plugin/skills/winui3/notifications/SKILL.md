@@ -1,6 +1,16 @@
 ---
 name: notifications
-description: 'Rules and patterns for implementing toast notifications, scheduled notifications, push notifications, and notification handling in WinUI 3 / Windows App SDK apps using AppNotificationManager and AppNotificationBuilder.'
+description: 'Rules and patterns for implementing toast notifications, scheduled notifications, push notifications, and notification handling in WinUI 3 / Windows App SDK apps using AppNotificationManager and AppNotificationBuilder. Use when the user wants to show notifications, display alerts, send toast messages, or notify the user of events.'
+---
+
+## Quick Reference
+
+- **Use `AppNotificationManager`** — replaces legacy UWP `ToastNotificationManager`. Requires package identity.
+- **Register `NotificationInvoked` before calling `Register()`** — handler must be wired in `App()` constructor before registration.
+- **Use `AppNotificationBuilder`, not raw XML** — type-safe builder API for text, images, buttons, and input fields.
+- **Check `AppNotificationManager.Default.Setting` before showing** — handle `DisabledByUser` / `DisabledByGroupPolicy` gracefully.
+- **Call `Unregister()` on app exit** — unregister in the main window's `Closed` event to clean up notification registration.
+
 ---
 
 # WinUI 3 App Notifications (Toast & Push)
@@ -198,7 +208,7 @@ public async Task RegisterForPushAsync()
 
 ### 8. Unpackaged App Considerations
 
-Notifications require package identity. For unpackaged apps, use the Windows App SDK bootstrapper with a COM-based activator:
+Notifications require package identity. For setting up package identity, see the winapp-cli `identity` skill. For unpackaged apps, use the Windows App SDK bootstrapper with a COM-based activator:
 
 ```csharp
 // Register a COM activator GUID for notification handling in unpackaged apps

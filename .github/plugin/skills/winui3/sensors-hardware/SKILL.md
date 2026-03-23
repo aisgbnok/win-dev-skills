@@ -1,6 +1,6 @@
 ---
 name: sensors-hardware
-description: 'Sensor and hardware integration for WinUI 3 apps — geolocation, Bluetooth, serial ports, and device enumeration. Use when accessing hardware sensors or peripherals.'
+description: 'Sensor and hardware integration for WinUI 3 apps — geolocation, Bluetooth, serial ports, and device enumeration. Use when accessing hardware sensors or peripherals. Use when the user wants to access device hardware, get location, use Bluetooth, connect to serial devices, or detect device capabilities.'
 ---
 
 # Sensors & Hardware Integration for WinUI 3

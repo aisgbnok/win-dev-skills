@@ -1,6 +1,6 @@
 ---
 name: create-app
-description: Creates a new WinUI 3 C# desktop application from scratch using dotnet new winui + winapp init. Use when asked to create a new app, start a new project, scaffold a WinUI 3 application, or make a Windows desktop app.
+description: Creates a new WinUI 3 C# desktop application from scratch using dotnet new winui. Use when asked to create a new app, start a new project, scaffold a WinUI 3 application, or make a Windows desktop app. Use when the user wants to start a new project, build something from scratch, create a new Windows app, or scaffold a new application.
 ---
 
 # Workflow: Create a New WinUI 3 C# App
@@ -36,26 +36,12 @@ dotnet new winui -n <AppName>
 Set-Location <AppName>
 ```
 
-### Step 4: One-Time Project Setup
-
-Initialize package identity and manifest:
-
-```powershell
-winapp init --use-defaults
-```
-
-Add Raka for live UI inspection (Debug only, stripped from Release):
-
-```powershell
-dotnet add package Raka.DevTools
-```
-
-> `winapp init` only needs to run once per project. After that, `dotnet run -c Debug` automatically builds and launches with package identity.
-
 ### Step 5: Build and Run
 
 ```powershell
-dotnet run -c Debug
+# Build and run (use arch that matches the machine -- x64 or Arm64, tfm is typically net10.0-windows10.0.26100.0 but check your project file to confirm)
+dotnet build <path-to-project.csproj> -c Debug -p:Platform=(arch)
+winapp run bin\(arch)\(tfm)\win-(arch)\
 ```
 
 ### Step 6: Verify
@@ -63,8 +49,8 @@ dotnet run -c Debug
 After launch, verify the app is running:
 
 ```bash
-raka status --app <AppName>
-raka screenshot -f initial.png
+winapp ui status -a <pid/appname>
+winapp ui screenshot -a <pid/appname>
 ```
 
 ### Step 7: Ready for Features
@@ -82,7 +68,6 @@ After successful build, check whether the user's original request includes featu
 1. **Template name is `winui`, NOT `winui3`** — use `dotnet new winui -n <AppName>`
 2. **`-n` creates the subfolder** — do NOT `mkdir` first
 3. **Preserve template-generated files** — the template creates MainWindow.xaml with TitleBar, SystemBackdrop, and layout. Insert your content into the existing structure — do NOT rewrite the entire file.
-4. **Always build with `-c Debug`** — Raka.DevTools is stripped from Release builds.
 
 ---
 
@@ -91,6 +76,6 @@ After successful build, check whether the user's original request includes featu
 1. Prerequisites verified via check-env skill
 2. App metadata collected (name, publisher, description)
 3. Project created with `dotnet new winui`
-4. `winapp init --use-defaults` and `dotnet add package Raka.DevTools` succeeded
-5. Initial build successful with `dotnet run -c Debug`
-6. App verified running via `raka status` and `raka screenshot`
+5. Initial build successful with `dotnet build <path-to-project.csproj> -c Debug -p:Platform=(arch)
+6. App runs successfully with `winapp run bin\(arch)\(tfm)\win-(arch)\`
+6. App verified running via `winapp ui` commands

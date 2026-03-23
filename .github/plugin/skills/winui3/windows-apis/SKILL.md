@@ -1,90 +1,136 @@
 ---
 name: windows-apis
-description: 'WinAppSDK and Windows Platform SDK API lookup guidance with sample-first rule. Use before implementing any Windows platform API.'
+description: 'Find and explore Windows desktop APIs using local WinMD metadata search and online documentation. Use when building features that need platform capabilities — camera, file access, notifications, UI controls, AI/ML, sensors, networking, etc. Discovers the right API for a task and retrieves full type details (methods, properties, events, enumeration values). Also use before implementing any Windows platform API to find samples and verify the correct API surface.'
 ---
 
-# Windows APIs, WinAppSDK & Windows Platform SDK
+## Quick Reference
 
-## Sample-First Rule
-
-> **Agent Rule, MANDATORY:** Before implementing **any** WinAppSDK or Windows Platform SDK API you have not used before, you **must** search the sample repositories below for a working example first. **Do not guess API usage patterns from documentation alone**, the docs often omit critical details that only the sample code reveals. Search **all** of the following repos, not just one:
-
-| # | Repository | What it covers |
-|---|---|---|
-| 1 | [WindowsAppSDK-Samples](https://github.com/microsoft/WindowsAppSDK-Samples) | All WinAppSDK features (AI, windowing, lifecycle, notifications, etc.) |
-| 2 | [AI Dev Gallery](https://github.com/microsoft/ai-dev-gallery) | On-device AI/ML patterns, model usage examples |
-| 3 | [WinUI-Gallery](https://github.com/microsoft/WinUI-Gallery) | UI control patterns and XAML examples |
-
-### How to apply
-
-1. **Find the right API**, Translate the user's scenario/requirement into common API/programming keywords, then search the API references (Part AΓÇôB below) using those keywords to identify which API fits.
-2. **Search for samples**, Once you know which API to use, search each sample repo above for the class name to find a working example.
-3. **Study the sample**, Read the sample's Model / ViewModel / Service layer to understand how the API is actually called, object lifetime, required parameters, data preparation, error handling.
-4. **Adapt** the sample pattern into our MVVM architecture, don't copy the sample structure wholesale, but match its API call sequence exactly.
+- **Sample-first rule** — Before implementing any Windows API, search for an official sample. Use the API only after reading a working example.
+- **Search WinMD cache first** — Use `winapp api search "<keyword>"` to find the right API by capability, then `winapp api members "<TypeName>"` for full signatures.
+- **Translate user language to API terms** — Map natural descriptions ("take a picture") to technical keywords (camera, capture, MediaCapture) and try multiple variations.
+- **Check both SDK surfaces** — `Windows.*` (Platform SDK, always available) and `Microsoft.*` (WinAppSDK, for WinUI/windowing/notifications).
+- **Look up docs for context** — WinMD cache has signatures only. For explanations, examples, and remarks, check Microsoft Learn.
 
 ---
 
-> **Agent Rule:** Before implementing any feature that involves a platform capability, **consult this file** to check whether a built-in API already exists. Always verify exact class names, method signatures, and availability by following the reference links, do not guess API shapes.
+# Windows API Discovery
 
----
+This skill helps you find the right Windows API for any capability and get its full details.
 
-## Part A, Windows App SDK APIs
+## API Surfaces
 
-**Full API reference:** <https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/>
+| Namespace prefix | What it covers | Documentation |
+|-----------------|----------------|---------------|
+| `Windows.*` | Platform SDK — WinRT APIs for camera, sensors, notifications, storage, networking, AI/ML | [learn.microsoft.com/uwp/api/](https://learn.microsoft.com/uwp/api/) |
+| `Microsoft.UI.*` | WinUI 3 controls, windowing, composition, input | [learn.microsoft.com/windows/windows-app-sdk/api/winrt/](https://learn.microsoft.com/windows/windows-app-sdk/api/winrt/) |
+| `Microsoft.Windows.*` | WinAppSDK extensions — AppLifecycle, Widgets, PushNotifications | Same as above |
 
-> **Agent Rule:** Do not rely on a hardcoded namespace list, the SDK is updated frequently. Instead, **search** the API reference above by converting the user's scenario into common programming keywords.
+## How to Find the Right API
 
-### How to search
+### Step 1: Translate user language → search keywords
 
-1. **Translate** the user's request into API/programming terms. Examples:
-   - "I want to describe an image" ΓåÆ search for: `image description`, `ImageDescription`, `describe image`
-   - "Add a notification" ΓåÆ search for: `notification`, `toast`, `AppNotification`
-   - "Pick a file" ΓåÆ search for: `file picker`, `StoragePicker`, `FileOpenPicker`
-   - "Make the window always on top" ΓåÆ search for: `AppWindow`, `presenter`, `compact overlay`
-2. **Search** the [WinAppSDK API reference](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/) using `web_search` or `web_fetch` with those keywords.
-3. **Verify** the class/method exists in the SDK version used by this project (check `.csproj` `<PackageReference>` for `Microsoft.WindowsAppSDK` version).
+| User says | Keywords to try |
+|-----------|----------------|
+| "take a picture" | camera, capture, photo, MediaCapture |
+| "send a notification" | notification, toast, AppNotification |
+| "save settings" | settings, ApplicationData, LocalSettings |
+| "pick a file" | file, picker, FileOpenPicker, StorageFile |
+| "detect location" | location, geolocation, Geolocator |
+| "use Bluetooth" | bluetooth, BluetoothLE, DeviceWatcher |
+| "AI/ML inference" | MachineLearning, LearningModel, WindowsAI |
+| "drag and drop" | drag, drop, DragDrop, DataPackage |
+| "background work" | BackgroundTask, ExtendedExecution |
+| "share content" | ShareTarget, DataTransferManager |
 
-### Key reference links
+### Step 2: Search for the API
 
-| # | Link | When to consult |
-|---|---|---|
-| 1 | [WinAppSDK API Reference (full)](https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/) | **Always**, search and look up exact class/method signatures here |
-| 2 | [Windows App SDK overview](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/) | Feature overview, architecture |
-| 3 | [Release notes (stable)](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/stable-channel) | API availability, version support, breaking changes |
-| 4 | [Windows AI overview](https://learn.microsoft.com/en-us/windows/ai/) | All AI options: Windows AI APIs, Windows ML, Foundry Local |
-| 5 | [Get started with Windows AI APIs](https://learn.microsoft.com/en-us/windows/ai/apis/get-started) | Prerequisites, project setup, first AI call |
-| 6 | [Windows ML overview](https://learn.microsoft.com/en-us/windows/ai/new-windows-ml/overview) | Custom ONNX model inference |
-| 7 | [Foundry Local](https://learn.microsoft.com/en-us/windows/ai/foundry-local/get-started) | Run OSS LLMs locally |
+```powershell
+# Search by capability keyword
+winapp api search "<keyword>"
 
----
+# List types in a namespace
+winapp api types "<Namespace>"
 
-## Part B, Windows Platform SDK (UWP / WinRT APIs)
+# Get all members of a type
+winapp api members "<FullTypeName>"
 
-**Full API reference:** <https://learn.microsoft.com/en-us/uwp/api/>
+# Get enum values
+winapp api enums "<FullTypeName>"
+```
 
-> **Agent Rule:** The Platform SDK (`Windows.*` namespaces) is very large and constantly evolving. Do not rely on a hardcoded list. **Search** the API reference by translating the user's requirement into programming keywords.
+If `winapp api` is not available, fall back to online search:
+- Platform SDK: search `site:learn.microsoft.com/uwp/api <keywords>`
+- WinAppSDK: search `site:learn.microsoft.com/windows/windows-app-sdk/api/winrt <keywords>`
 
-### How to search
+### Step 3: Look up documentation
 
-1. **Translate** the user's request into API/programming terms. Examples:
-   - "Send a Bluetooth message" ΓåÆ search for: `Bluetooth`, `RFCOMM`, `BluetoothDevice`
-   - "Get the user's location" ΓåÆ search for: `geolocation`, `Geolocator`, `position`
-   - "Read text from an image" ΓåÆ search for: `OCR`, `text recognition`, `OcrEngine`
-   - "Copy to clipboard" ΓåÆ search for: `clipboard`, `DataTransfer`, `DataPackage`
-2. **Search** the [Platform SDK API reference](https://learn.microsoft.com/en-us/uwp/api/) using `web_search` or `web_fetch` with those keywords.
-3. **Check for WinAppSDK equivalent**, some Platform SDK APIs have newer equivalents in Part A. Always prefer the WinAppSDK version when both exist.
+| Namespace prefix | URL pattern |
+|-----------------|-------------|
+| `Windows.*` | `https://learn.microsoft.com/uwp/api/{fully.qualified.typename}` |
+| `Microsoft.*` | `https://learn.microsoft.com/windows/windows-app-sdk/api/winrt/{fully.qualified.typename}` |
 
-### Key reference links
+### Step 4: Find official samples
 
-| # | Link | When to consult |
-|---|---|---|
-| 1 | [Platform SDK API Reference (full)](https://learn.microsoft.com/en-us/uwp/api/) | **Search here** for any Windows capability not in WinAppSDK |
-| 2 | [Windows SDK downloads](https://developer.microsoft.com/windows/downloads/windows-sdk/) | SDK versions and downloads |
+Before writing code, check for samples:
+- [Windows App SDK Samples](https://github.com/microsoft/WindowsAppSDK-Samples)
+- [Windows Universal Samples](https://github.com/microsoft/Windows-universal-samples)
+- [WinUI 3 Gallery](https://github.com/microsoft/WinUI-Gallery)
 
----
+## Common API Patterns
 
-## Validation
+### Notifications (Toast)
+```csharp
+// Requires: Microsoft.Windows.AppNotifications
+AppNotificationManager.Default.Register();
+var builder = new AppNotificationBuilder()
+    .AddText("Title")
+    .AddText("Body");
+AppNotificationManager.Default.Show(builder.BuildNotification());
+```
 
-- Before implementing any platform feature, confirm the API is available in the current Windows App SDK version by checking the [release notes](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/stable-channel).
-- For features requiring specific hardware (NPU), provide a graceful fallback for unsupported devices.
-- When both WinAppSDK and Platform SDK offer a similar API, prefer the WinAppSDK version.
+### File Picker (Desktop)
+```csharp
+// Requires: InitializeWithWindow for desktop apps
+var picker = new FileOpenPicker();
+var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+picker.FileTypeFilter.Add(".txt");
+var file = await picker.PickSingleFileAsync();
+```
+
+### Geolocation
+```csharp
+var access = await Geolocator.RequestAccessAsync();
+if (access == GeolocationAccessStatus.Allowed)
+{
+    var locator = new Geolocator();
+    var position = await locator.GetGeopositionAsync();
+    var lat = position.Coordinate.Point.Position.Latitude;
+}
+```
+
+### Background Task Registration
+```csharp
+// Requires package identity (use winapp run or create-debug-identity)
+var builder = new BackgroundTaskBuilder();
+builder.Name = "MyTask";
+builder.SetTrigger(new TimeTrigger(15, false));
+builder.Register();
+```
+
+## Anti-Patterns
+
+- ❌ Using an API without checking a sample first — leads to incorrect usage patterns
+- ❌ Assuming UWP samples work directly in WinUI 3 — check for namespace and API differences
+- ❌ Forgetting `InitializeWithWindow` for pickers/dialogs in desktop apps — causes runtime exceptions
+- ❌ Using identity-requiring APIs without registering identity — use `winapp run` or `create-debug-identity` first
+- ❌ Hardcoding namespace URLs — use the pattern table above to construct correct documentation links
+
+## Validation Checklist
+
+- [ ] Searched for and reviewed an official sample before implementing
+- [ ] Verified the API exists in the target SDK version
+- [ ] Added required capabilities to appxmanifest.xml if needed
+- [ ] Used `InitializeWithWindow` for any picker or dialog in desktop context
+- [ ] Registered package identity if using identity-requiring APIs
+- [ ] Tested on both x64 and Arm64 if using platform-specific APIs

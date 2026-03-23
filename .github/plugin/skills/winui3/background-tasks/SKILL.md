@@ -1,6 +1,6 @@
 ---
 name: background-tasks
-description: 'WinUI 3 background tasks, extended execution, timers, startup tasks, and long-running operation patterns for Windows App SDK desktop apps'
+description: 'WinUI 3 background tasks, extended execution, timers, startup tasks, and long-running operation patterns for Windows App SDK desktop apps. Use when the user wants their app to do something in the background, run at startup, schedule periodic work, or continue running after being minimized.'
 ---
 
 # Background Tasks & Services in WinUI 3

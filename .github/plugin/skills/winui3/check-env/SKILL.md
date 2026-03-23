@@ -1,6 +1,6 @@
 ---
 name: check-env
-description: Validates the development environment for WinUI 3 C# apps. Use when creating a new project, troubleshooting build failures, or setting up a new machine. Checks Windows 10 1903+, .NET SDK 10.0+, winapp CLI, and raka CLI availability.
+description: Validates the development environment for WinUI 3 C# apps. Use when creating a new project, troubleshooting build failures, or setting up a new machine. Checks Windows 10 1903+, .NET SDK 10.0+, winapp CLI.
 ---
 
 # Check Prerequisites for WinUI 3 Development
@@ -21,7 +21,7 @@ Validates the minimum environment prerequisites for building WinUI 3 C# apps wit
 | Windows | 10 version 1903 (build 18362) or later |
 | .NET SDK | 10.0 or later |
 
-> **Note:** Visual Studio is **not** required for C# WinUI 3 projects. The .NET SDK plus `winapp` and `raka` handle everything.
+> **Note:** Visual Studio is **not** required for C# WinUI 3 projects. The .NET SDK plus `winapp` handle everything.
 
 ## AI Agent Instructions
 
@@ -47,9 +47,8 @@ Replace `<path-to-this-skill-folder>` with the actual path to the folder contain
 | Failed Check | User Action |
 |--------------|-------------|
 | Windows version too old | Upgrade to Windows 10 1903 or later |
-| .NET SDK not found | Install .NET SDK 10.0 from https://dot.net/download |
-| `winapp` not on PATH | Install the winapp MSIX package |
-| `raka` not on PATH | Install the raka MSIX package |
+| .NET SDK not found | Install .NET SDK 10.0 with winget with `winget install Microsoft.DotNet.SDK.10 --source winget` |
+| `winapp` not on PATH | Install winapp with `winget install Microsoft.WinAppCLI --source winget` |
 
 ## Script Parameters
 

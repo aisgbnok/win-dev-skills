@@ -3,6 +3,18 @@ name: advanced-mvvm
 description: 'Advanced MVVM patterns for WinUI 3 apps — behaviors, attached behaviors, state machines, composite ViewModels, and command chaining. Use when building complex UI interactions with clean architecture.'
 ---
 
+## Quick Reference
+
+- **Separate Models/ViewModels into their own class library** — prevents UI types leaking into business logic; the UI project references the ViewModel library, never the reverse.
+- **Use CommunityToolkit.Mvvm source generators** — `[ObservableProperty]`, `[RelayCommand]`, `[NotifyCanExecuteChangedFor]` for all ViewModels.
+- **Use `WeakReferenceMessenger` for ViewModel-to-ViewModel communication** — never reference ViewModels directly; extend `ObservableRecipient` and call `OnDeactivated()` for cleanup.
+- **Abstract dialogs and navigation behind interfaces** — ViewModels must never touch `ContentDialog`, `Frame`, or UI types directly.
+- **Model page states with enums, not scattered booleans** — a single `PageState` enum replaces `IsLoading`, `HasError`, etc.
+
+---
+
+> **Cross-reference:** For detailed data binding patterns (`x:Bind`, converters, compiled bindings), see the `data-binding` skill.
+
 # Advanced MVVM Patterns for WinUI 3
 
 These rules apply to **every feature and change** involving MVVM architecture.

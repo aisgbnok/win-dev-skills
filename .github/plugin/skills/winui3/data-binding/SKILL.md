@@ -3,6 +3,16 @@ name: data-binding
 description: 'WinUI 3 data binding patterns — x:Bind, ObservableCollection, INotifyPropertyChanged, converters, templates, and collection views. Use when implementing or modifying data binding in XAML or ViewModels.'
 ---
 
+## Quick Reference
+
+- **Always use `x:Bind` over `{Binding}`** — compiled, type-safe, faster. Reserve `{Binding}` only for Style setters and DataGridColumn bindings.
+- **Set `Mode=` explicitly** — `x:Bind` defaults to `OneTime`. Use `Mode=OneWay` for live updates, `Mode=TwoWay` for input controls.
+- **Use `[ObservableProperty]` from CommunityToolkit.Mvvm** — auto-generates `INotifyPropertyChanged` boilerplate for all ViewModel properties.
+- **Use `ObservableCollection<T>` for bound lists** — never replace the instance; call `.Clear()` and re-add items to keep the UI binding alive.
+- **Specify `x:DataType` on every `DataTemplate`** — enables compiled, type-safe `x:Bind` inside templates.
+
+---
+
 # Data Binding
 
 These rules apply to **every feature and change**. They are not optional add-ons.

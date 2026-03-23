@@ -1,6 +1,6 @@
 ---
 name: add-feature
-description: Complete workflow for adding new functionality to an existing WinUI 3 C# app. Use when asked to add a feature, implement a control, integrate an API, add a button, create a new page, or extend app capabilities. Guides through mandatory spec and sample searching, implementation, and build verification.
+description: Complete workflow for adding new functionality to an existing WinUI 3 C# app. Use when asked to add a feature, implement a control, integrate an API, add a button, create a new page, or extend app capabilities. Guides through mandatory spec and sample searching, implementation, and build verification. Use when the user wants to add something to their app, implement new functionality, add a button, create a new page, or extend their application.
 ---
 
 # Workflow: Add New Feature to a WinUI 3 App
@@ -59,15 +59,19 @@ Implement the feature based on the specs and samples found. Follow the patterns 
 ### Step 6: Build and Verify
 
 ```powershell
-dotnet run -c Debug
+# Build and run (use arch that matches the machine -- x64 or Arm64, tfm is typically net10.0-windows10.0.26100.0 but check your project file to confirm)
+dotnet build <path-to-project.csproj> -c Debug -p:Platform=(arch)
+winapp run bin\(arch)\(tfm))\win-(arch)\
 ```
 
-After launch, use `raka` to verify the feature works:
+After launch, use `winapp ui` to verify the feature works:
 
 ```bash
-raka status --app <AppName>
-raka inspect -d 3 --from-page --format tree
-raka screenshot -f verify.png
+winapp ui status -a <pid/appname>
+winapp ui inspect -d 3 <selector> -a <pid/appname>
+
+# always delete screenshots after use to prevent bloating the working directory
+winapp ui screenshot -a <pid/appname>
 ```
 
 ### Step 7: Log Feedback
@@ -82,4 +86,4 @@ If **anything** went wrong during implementation (build error, retry, workaround
 2. Specs and samples searched for relevant API patterns
 3. Feature implemented following WinUI 3 best practices (MVVM, proper XAML patterns)
 4. Build successful with no errors
-5. Feature verified visually with `raka screenshot`
+5. Feature verified visually with `winapp ui screenshot`

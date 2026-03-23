@@ -3,6 +3,16 @@ name: file-handling
 description: 'WinUI 3 file handling patterns: file pickers, System.IO, packaged/unpackaged storage, drag-and-drop, file watchers, and file type associations for Windows App SDK desktop apps.'
 ---
 
+## Quick Reference
+
+- **Initialize file pickers with `InitializeWithWindow`** — pass the window HWND before calling `Pick*Async`; omitting this causes crashes in WinUI 3.
+- **Prefer `System.IO` async methods over `StorageFile`/`StorageFolder`** — use WinRT storage APIs only for broker-mediated access (pickers, MRU, broad access).
+- **Use `Path.Combine()`, never hardcode backslash paths** — avoids platform-specific path separator issues.
+- **Always handle `UnauthorizedAccessException`** — `broadFileSystemAccess` and restricted locations may deny access; guide users to Settings.
+- **Dispose file streams with `using`/`await using`** — `FileStream`, `StreamReader`, and `StreamWriter` must always be disposed.
+
+---
+
 # File Handling & Storage in WinUI 3
 
 These rules apply to all file access operations in WinUI 3 / Windows App SDK desktop applications, including file pickers, reading and writing files, managing application storage locations, drag-and-drop, file watching, and file type activation.

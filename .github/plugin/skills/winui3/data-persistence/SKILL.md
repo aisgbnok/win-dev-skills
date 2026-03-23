@@ -1,6 +1,6 @@
 ---
 name: data-persistence
-description: 'Data persistence patterns for WinUI 3 apps — local settings, file storage, SQLite, EF Core, JSON serialization, and app lifecycle state. Use when saving user preferences, app state, or structured data.'
+description: 'Data persistence patterns for WinUI 3 apps — local settings, file storage, SQLite, EF Core, JSON serialization, and app lifecycle state. Use when saving user preferences, app state, or structured data. Use when the user wants to save data, store settings, remember preferences, use a database, or persist state between app launches.'
 ---
 
 # Data Persistence
@@ -174,7 +174,7 @@ var result = JsonSerializer.Deserialize(json,
     AppJsonContext.Default.AppSettings);
 ```
 
-- **App suspend/resume** — save lightweight state in `LocalSettings` and complex state to files. Subscribe to `EnteredBackground` and `LeavingBackground`:
+- **App suspend/resume** — save lightweight state in `LocalSettings` and complex state to files. Subscribe to `EnteredBackground` and `LeavingBackground`. For background task patterns, see the `background-tasks` skill.
 
 ```csharp
 // In App.xaml.cs

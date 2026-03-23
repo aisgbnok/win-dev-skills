@@ -3,6 +3,16 @@ name: advanced-windowing
 description: 'Rules for AppWindow API usage, multi-window management, custom title bars, presenter types, window sizing/positioning, and cross-window communication in WinUI 3 / Windows App SDK desktop apps.'
 ---
 
+## Quick Reference
+
+- **Get `AppWindow` via interop** — `WindowNative.GetWindowHandle()` → `Win32Interop.GetWindowIdFromWindow()` → `AppWindow.GetFromWindowId()`. Cache the reference.
+- **`Resize()`/`Move()` use physical pixels** — always scale by `GetDpiForWindow / 96.0` to get correct sizing on high-DPI displays.
+- **Prefer the built-in `TitleBar` control** — handles drag regions, caption buttons, theming, and interactive content automatically.
+- **Set `ContentDialog.XamlRoot` to the target window** — use `targetWindow.Content.XamlRoot`, never a global/static `XamlRoot`.
+- **Never use `Window.Current`** — it does not exist in WinUI 3. Pass explicit `Window` references or use a `WindowService` singleton.
+
+---
+
 # Advanced Windowing in WinUI 3
 
 These rules apply to all code that creates, manages, sizes, positions, or customizes windows using the Windows App SDK `AppWindow` APIs, including multi-window scenarios, custom title bars, presenter switching, and cross-window communication.

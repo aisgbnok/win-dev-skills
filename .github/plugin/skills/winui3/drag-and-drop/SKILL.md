@@ -1,6 +1,6 @@
 ---
 name: drag-and-drop
-description: 'Drag and drop support for WinUI 3 apps — drag sources, drop targets, visual feedback, and file handling. Use when implementing drag-and-drop interactions.'
+description: 'Drag and drop support for WinUI 3 apps — drag sources, drop targets, visual feedback, and file handling. Use when implementing drag-and-drop interactions. Use when the user wants to drag items, drop files onto their app, reorder list items by dragging, or support drag-and-drop interactions.'
 ---
 
 # Drag and Drop in WinUI 3

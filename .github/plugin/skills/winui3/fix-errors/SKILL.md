@@ -1,6 +1,6 @@
 ---
 name: fix-errors
-description: Workflow for diagnosing and fixing errors in WinUI 3 C# apps. Use when encountering build failures, runtime crashes, HRESULT errors, XAML parsing issues, package registration problems, or unexpected behavior. Searches known issues, applies targeted fixes, and verifies by rebuilding.
+description: Workflow for diagnosing and fixing errors in WinUI 3 C# apps. Use when encountering build failures, runtime crashes, HRESULT errors, XAML parsing issues, package registration problems, or unexpected behavior. Searches known issues, applies targeted fixes, and verifies by rebuilding. Use when the user's app won't build, crashes at startup, shows a blank window, has XAML errors, or encounters any error message.
 ---
 
 # Workflow: Troubleshooting WinUI 3 C# Apps
@@ -29,6 +29,12 @@ If nothing found, search for related issues in the `microsoft/WindowsAppSDK` Git
 
 ### Step 3: Diagnose and Apply Fixes
 
+**Read ALL errors first, then fix in one pass.** Do not fix errors one at a time with a rebuild between each — this wastes tokens. Instead:
+1. Read the complete build output and list every unique error
+2. Group errors by root cause (often one fix resolves multiple errors)
+3. Apply all fixes in one batch
+4. Rebuild once to verify
+
 Based on the error type:
 
 | Error Type | Action |
@@ -43,14 +49,21 @@ Based on the error type:
 ### Step 4: Rebuild and Verify
 
 ```powershell
-dotnet run -c Debug
+# Build with explicit platform (required for WinUI 3)
+dotnet build <project.csproj> -c Debug -p:Platform=x64
+
+# Run packaged apps with winapp (NOT dotnet run)
+winapp run bin\x64\Debug\<tfm>\win-x64\
+
+# Run unpackaged apps
+dotnet run --project <project.csproj> -p:Platform=x64
 ```
 
-After successful launch, verify with `raka`:
+After successful launch, verify with `winapp ui` commands:
 
 ```bash
-raka status --app <AppName>
-raka screenshot -f fix-verify.png
+winapp ui inspect -a <pid/appname>
+winapp ui screenshot -a <pid/appname>
 ```
 
 ### Step 5: Log Feedback
@@ -96,4 +109,4 @@ Append every error encountered and its resolution to `FEEDBACK.md`.
 2. Known issues searched in resources and documentation
 3. Appropriate fix applied based on error analysis
 4. Rebuild successful with no remaining errors
-5. App functionality verified with `raka screenshot`
+5. App functionality verified with `winapp ui` commands

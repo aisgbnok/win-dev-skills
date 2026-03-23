@@ -260,6 +260,14 @@ When you write or modify code, follow this sequence:
 - Verify AAA structure (Arrange/Act/Assert) in every test method.
 - Confirm coverage goals: 80%+ on ViewModels/Services, 100% on helpers.
 
+### Verification Checklist
+
+- [ ] All ViewModels have corresponding unit tests
+- [ ] AAA pattern (Arrange/Act/Assert) followed in every test
+- [ ] Edge cases covered (null inputs, empty collections, boundary values)
+- [ ] Dependencies are mocked via interfaces (Moq)
+- [ ] Test names follow `MethodName_Scenario_ExpectedResult` convention
+
 ---
 
 ## Must Read & Research

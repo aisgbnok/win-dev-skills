@@ -3,13 +3,13 @@
 Copilot CLI skills and agents for Windows app development.
 
 > [!IMPORTANT]
-> :warning: **Note:** The install script and release bundling are **temporary**. The versions of the tools (WinApp CLI, Raka CLI) and NuGet packages are currently in preview or proof of concepts and are not available in public package registries. For public facing skills, the agents will handle tool installation automatically with tools and packages available in public registries — no script needed, and the plugin will be installable directly from the Copilot CLI.
+> :warning: **Note:** The install script and release bundling are **temporary**. The versions of the tools (WinApp CLI) and NuGet packages are currently in preview or proof of concepts and are not available in public package registries. For public facing skills, the agents will handle tool installation automatically with tools and packages available in public registries — no script needed, and the plugin will be installable directly from the Copilot CLI.
 
 ## What's in this repo
 
 - **`.github/plugin/`** — Copilot CLI plugin with agents and skills for Windows development
   - **winapp** agent — App packaging, code signing, Windows SDK, package identity (Electron, .NET, C++, Rust, Flutter, Tauri)
-  - **winui3-builder** agent — WinUI 3 app development with live UI automation via Raka
+  - **winui3-builder** agent — WinUI 3 app development with live UI automation
   - Skills for setup, packaging, signing, manifest authoring, troubleshooting, and more
 - **`scripts/install.ps1` / `scripts/install.cmd`** — User installer (temporary, see below)
 - **`scripts/build-release.ps1`** — Maintainer script to download artifacts and publish releases
@@ -22,7 +22,7 @@ Copilot CLI skills and agents for Windows app development.
 4. When prompted, confirm the installation
 
 The installer will:
-- Install **WinApp CLI** and **Raka CLI** as portable executables (everything is in the zip -- no internet or admin required)
+- Install **WinApp CLI** as portable executables (everything is in the zip -- no internet or admin required)
 - Copy NuGet packages and register them as a NuGet source (so `dotnet restore` just works)
 - Install WinUI 3 project templates (if included)
 - Install the **Copilot CLI plugin** with Windows development agents and skills
@@ -54,7 +54,6 @@ The `build-release.ps1` script downloads artifacts from source repositories, bun
 | Artifact | Source | Auth required |
 |---|---|---|
 | WinApp CLI (exe + NuGet) | GitHub Actions artifacts from [microsoft/winappCli](https://github.com/microsoft/winappCli) PR | Yes (`gh`) |
-| Raka CLI (exe + NuGet) | Latest release from [nmetulev/raka](https://github.com/nmetulev/raka) | No |
 | WinUI Templates | Built from [microsoft/WindowsAppSDK](https://github.com/microsoft/WindowsAppSDK) source | No |
 
 ### Usage
@@ -76,7 +75,6 @@ The `build-release.ps1` script downloads artifacts from source repositories, bun
 The script will:
 1. Verify all prerequisites are met (tools installed, authenticated)
 2. Download WinApp CLI portable executables + NuGet from the latest successful build on the PR branch
-3. Download Raka CLI portable executables + NuGet from the latest GitHub release
 4. Build WinUI templates from source (clones WindowsAppSDK, runs dotnet pack)
 5. Bundle everything with the plugin and install script into a zip
 6. Optionally publish to GitHub Releases (with `-Publish`)
@@ -87,10 +85,26 @@ This project welcomes contributions and suggestions. Please see [SECURITY.md](SE
 
 ### Adding a new Skill
 
-1. Add a row to the Skill table in the `.github\plugin\agents\winui3-builder.agent.md` markdown file. There are two columns:
-  - The first is the _Name_ of the skill, this should be bolded (surrounded in `**` on both sides)
-  - The second is a description of when the skill should be used. This can be a list of concepts or type names, etc...
+1. Add a row to the Skill table in the `.github\plugin\agents\winui3-builder.agent.md` markdown file under the appropriate category group.
+  - The first column is the _Name_ of the skill, this should be bolded (surrounded in `**` on both sides)
+  - The second column is a description of when the skill should be used, including natural-language user intents (e.g., "Use when the user wants to...")
 2. Create a new subfolder with the same **name** as the name of your new skill in the `.github/plugin/skills/winui3` folder.
 3. Add a new markdown file named `SKILL.md` as the only file in that new subdirectory.
-4. The Skill markdown file should be prefaced with YAML frontmatter that has the `name:` of the skill and a `description:` of the skill that provides a bit more detail on the content of the skill documentation compared to the initial table entry above.
-5. Best to follow the outline/formatting of one of the existing skills which describes the rules and when to apply them.
+4. The Skill markdown file should be prefaced with YAML frontmatter that has the `name:` of the skill and a `description:` that includes both technical terms and natural-language user intents for better routing.
+5. Follow the standard skill structure:
+
+```markdown
+## Quick Reference
+- 3-5 most critical, actionable rules (always read first)
+---
+# Skill Title
+## Detailed Rules
+- Full rules with code examples
+## Anti-Patterns
+- Common mistakes to avoid
+## Validation Checklist
+- [ ] Verification steps before completing
+```
+
+6. **For large skills (>8 KB):** Use a `references/` subdirectory to store detailed content. Keep `SKILL.md` compact (~4-5 KB) with quick-reference tables and an overview, and put detailed docs in `references/*.md` that the agent loads only when needed. See `wpf-to-winui3` for an example of this pattern.
+7. **Quality bar:** Every skill should have at minimum a Quick Reference section, at least 3 rules with code examples, an Anti-Patterns section, and a Validation Checklist.

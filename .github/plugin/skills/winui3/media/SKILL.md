@@ -1,6 +1,6 @@
 ---
 name: media
-description: 'Media playback for WinUI 3 apps — audio, video, MediaPlayerElement, and transport controls. Use when adding media playback or capture to desktop apps.'
+description: 'Media playback for WinUI 3 apps — audio, video, MediaPlayerElement, and transport controls. Use when adding media playback or capture to desktop apps. Use when the user wants to play audio or video, add a media player, stream content, or record from a microphone or camera.'
 ---
 
 # Media Integration in WinUI 3

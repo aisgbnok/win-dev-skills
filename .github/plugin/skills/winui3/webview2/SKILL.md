@@ -1,6 +1,6 @@
 ---
 name: webview2
-description: 'Rules for integrating WebView2 browser controls in WinUI 3 desktop applications, covering initialization, navigation, JavaScript interop, security, and performance.'
+description: 'Rules for integrating WebView2 browser controls in WinUI 3 desktop applications, covering initialization, navigation, JavaScript interop, security, and performance. Use when the user wants to embed a web browser, show web content, display HTML, load a website inside their app, or bridge JavaScript and C#.'
 ---
 
 # WebView2 Integration in WinUI 3
