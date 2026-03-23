@@ -116,6 +116,14 @@ Read efficiently to minimize token waste:
 - Use `Lazy<T>` for resource-dependent statics
 - WinUI 3's `ContentControl` + `DataTemplate` doesn't support implicit DataType — use `Frame.Navigate()`
 
+### Layout Matching (for conversions)
+When converting an existing app, the converted version must **visually match** the original:
+- **Same window dimensions** — use `AppWindow.Resize()` to match. Verify with `winapp ui inspect` on both apps
+- **Same visual density** — don't add UI elements that the original didn't have. Keep it compact
+- **Faithful control reproduction** — if the original has rich item templates (showing preview data in dropdowns), replicate them
+- **Match the button/control arrangement** — same relative positions, same grouping
+- **Read the `visual-design` skill** for typography, spacing, colors, and iconography guidance
+
 **For mapping tables, common pitfalls, and XAML syntax changes → See [references/migration-tables.md](./references/migration-tables.md)**
 
 ---

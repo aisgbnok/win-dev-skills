@@ -67,10 +67,16 @@ Before considering any task done, you **must**:
    - Wait for the operation to complete (use `winapp ui wait-for` for progress indicators)
    - Verify the output exists (check for output files, changed state, etc.)
    - If the operation hangs or fails, use `winapp run --debug-output` to capture first-chance exceptions and fix the root cause
-4. **If anything is missing or broken**, fix it before reporting completion.
-5. **If something couldn't be done**, explain clearly what wasn't possible and why — and log it as feedback.
-6. **Never say "done" if you skipped something** — either implement it or explicitly call out that it was not completed.
-7. **Common gotcha — RPC_E_WRONG_THREAD**: If you see this error in `--debug-output`, it means a WinRT/COM API is being called from the wrong thread. Fix by marshaling to the UI thread with `DispatcherQueue.TryEnqueue()` or by avoiding `.GetAwaiter().GetResult()` on async APIs.
+4. **For conversions — compare layout with the original**:
+   - Use `winapp ui inspect` on BOTH the original and converted apps
+   - Compare window dimensions — they should be similar
+   - Compare element — ComboBox, buttons, checkboxes should be positioned similarly
+   - The converted app should NOT be significantly taller/wider shorter/smaller than the original
+   - Don't add extra UI elements (labels, headers) that the original didn't have
+5. **If anything is missing or broken**, fix it before reporting completion.
+6. **If something couldn't be done**, explain clearly what wasn't possible and why — and log it as feedback.
+7. **Never say "done" if you skipped something** — either implement it or explicitly call out that it was not completed.
+8. **Common gotcha — RPC_E_WRONG_THREAD**: If you see this error in `--debug-output`, it means a WinRT/COM API is being called from the wrong thread. Fix by marshaling to the UI thread with `DispatcherQueue.TryEnqueue()` or by avoiding `.GetAwaiter().GetResult()` on async APIs.
 
 ---
 
@@ -141,7 +147,7 @@ Every time you work on this codebase, follow this checklist:
 
 5. **Apply Design Principles** — **Read** the `architecture` skill before adding/refactoring classes or logic. Apply DRY, KISS, SOLID, YAGNI.
 6. **Follow Fundamentals** — **Read the applicable skill** based on what you're changing:
-   - Adding or changing **UI controls / XAML**? → Read `quality` skill (accessibility: AutomationProperties, keyboard nav, contrast; performance: x:Bind, x:Load, virtualization).
+   - Adding or changing **UI controls / XAML**? → Read `quality` skill AND `visual-design` skill (typography, spacing on 4px grid, ThemeResource colors, ControlCornerRadius, iconography).
    - Adding or changing **user-facing strings** (labels, messages, tooltips)? → Read `quality` skill (globalization: `.resw` files, `x:Uid`, `ResourceLoader`).
    - Handling **secrets, user input, HTTP, or permissions**? → Read `quality` skill (security: no hard-coded secrets, input validation, least privilege).
    - Working on **data binding, collections, async/IO, or layout**? → Read `data-layer` skill (x:Bind, virtualization, async patterns).
@@ -163,7 +169,16 @@ Every time you work on this codebase, follow this checklist:
     # Check element state (toggles, text values)
     winapp ui get-property chk-agree-c3d4 -a <appname> --property ToggleState
     ```
-15. **Re-review against original goal** — Confirm the implementation matches the user's request.
+15. **Design review pass** — After functionality is verified, do a visual quality check using the `visual-design` skill:
+    - Take a final screenshot and examine it critically
+    - Check typography: are you using `TextBlockStyle` resources, not hardcoded `FontSize`?
+    - Check spacing: are margins/padding multiples of 4px? (4, 8, 12, 16, 24)
+    - Check colors: all `{ThemeResource}` brushes, no hardcoded hex colors?
+    - Check icons: `SymbolIcon` or `FontIcon` with proper sizes (16/20/24px)?
+    - Check layout density: is there unnecessary whitespace or extra UI chrome?
+    - For conversions: compare the window dimensions and element positions with the original app using `winapp ui inspect` on both — the layout should be a faithful reproduction, not a loose interpretation
+    - Run the `visual-design` skill's validation checklist before declaring done
+16. **Re-review against original goal** — Confirm the implementation matches the user's request.
 
 ### Troubleshooting Build Errors
 
