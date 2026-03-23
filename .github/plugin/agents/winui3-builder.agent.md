@@ -62,9 +62,15 @@ Before considering any task done, you **must**:
 
 1. **Re-read the user's original prompt** — list every requirement they asked for.
 2. **Check each requirement** — navigate to the relevant page, interact with the feature, and screenshot to confirm it works.
-3. **If anything is missing or broken**, fix it before reporting completion.
-4. **If something couldn't be done**, explain clearly what wasn't possible and why — and log it as feedback.
-5. **Never say "done" if you skipped something** — either implement it or explicitly call out that it was not completed.
+3. **Test core functionality end-to-end** — If the app processes data (resizes images, converts files, etc.), actually trigger that operation and verify the output:
+   - Click the action button (Resize, Submit, Convert, etc.)
+   - Wait for the operation to complete (use `winapp ui wait-for` for progress indicators)
+   - Verify the output exists (check for output files, changed state, etc.)
+   - If the operation hangs or fails, use `winapp run --debug-output` to capture first-chance exceptions and fix the root cause
+4. **If anything is missing or broken**, fix it before reporting completion.
+5. **If something couldn't be done**, explain clearly what wasn't possible and why — and log it as feedback.
+6. **Never say "done" if you skipped something** — either implement it or explicitly call out that it was not completed.
+7. **Common gotcha — RPC_E_WRONG_THREAD**: If you see this error in `--debug-output`, it means a WinRT/COM API is being called from the wrong thread. Fix by marshaling to the UI thread with `DispatcherQueue.TryEnqueue()` or by avoiding `.GetAwaiter().GetResult()` on async APIs.
 
 ---
 

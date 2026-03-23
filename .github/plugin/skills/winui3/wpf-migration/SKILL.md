@@ -52,6 +52,38 @@ dotnet build <project.csproj> -c Debug -p:Platform=x64
 winapp run bin\x64\Debug\<tfm>\win-x64\
 ```
 **Never** add `<WindowsPackageType>None</WindowsPackageType>` — removes package identity.
+Use `winapp run --debug-output` to capture first-chance exceptions and `RPC_E_WRONG_THREAD` errors.
+
+### Rule 5b: Threading — NEVER Use .GetAwaiter().GetResult() on WinRT APIs
+WinRT APIs (including `Windows.Graphics.Imaging`) are apartment-threaded. Calling `.GetAwaiter().GetResult()` or `.Result` on them deadlocks or throws `RPC_E_WRONG_THREAD`.
+
+**Anti-patterns that WILL crash:**
+```csharp
+// ❌ DEADLOCK: sync-over-async on WinRT API
+var bitmap = decoder.GetSoftwareBitmapAsync().GetAwaiter().GetResult();
+// ❌ DEADLOCK: inside Parallel.ForEach or Task.Run  
+Parallel.ForEach(files, file => {
+    var decoder = BitmapDecoder.CreateAsync(stream).GetAwaiter().GetResult(); // CRASH
+});
+```
+
+**Correct pattern for batch image processing:**
+```csharp
+// ✅ Process sequentially with proper async
+foreach (var file in files)
+{
+    await Task.Run(async () =>
+    {
+        using var stream = File.OpenRead(file);
+        var winrtStream = stream.AsRandomAccessStream();
+        var decoder = await BitmapDecoder.CreateAsync(winrtStream);
+        var bitmap = await decoder.GetSoftwareBitmapAsync();
+        // ... resize with BitmapEncoder ...
+    });
+    // Report progress on UI thread
+    dispatcherQueue.TryEnqueue(() => reportProgress(++completed, total));
+}
+```
 
 ### Rule 6: Source Analysis Strategy
 Read efficiently to minimize token waste:
