@@ -52,9 +52,6 @@ Need identity?
 ├─ Most frameworks (.NET, C++, Rust, Flutter, Tauri)
 │  └─ winapp run <build-output-dir>
 │     (registers loose layout package + launches app)
-├─ .NET with NuGet package
-│  └─ dotnet run
-│     (auto-registers identity via Microsoft.Windows.SDK.BuildTools.WinApp)
 └─ Electron
    └─ npx winapp node add-electron-debug-identity
       (registers sparse identity for electron.exe)
@@ -65,7 +62,6 @@ Need identity?
 ### .NET (WPF, WinForms, Console, WinUI 3)
 - .NET projects manage all SDK dependencies via NuGet `<PackageReference>` in the `.csproj`
 - **`winapp.yaml` is NOT needed** for .NET projects — winapp auto-detects SDK versions from `.csproj`
-- `winapp init` adds `Microsoft.Windows.SDK.BuildTools.WinApp` NuGet package, enabling `dotnet run` with automatic identity registration
 - For API access without winapp: just add the NuGet packages (`Microsoft.WindowsAppSDK`, `Microsoft.Windows.SDK.NET.Ref`) directly
 - **`winapp restore` and `winapp update` are for non-.NET projects only** — .NET uses `dotnet restore`
 

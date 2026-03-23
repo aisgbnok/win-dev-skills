@@ -76,29 +76,16 @@ Want to inspect or interact with a running app's UI?
 
 8. **Run `winapp --cli-schema` for the full CLI reference.** If you need exact option names, defaults, argument types, or details about any command, run `winapp --cli-schema` — it outputs the complete CLI structure as JSON. Use this whenever the information in this file isn't sufficient.
 
-## Command reference (summary)
+## Skills
 
-For full details on each command, see the corresponding skill. This section provides a quick overview for command selection.
+Skills are loaded automatically when relevant. For CLI command details, run `winapp <command> --help` or `winapp --cli-schema` for the full reference.
 
-| Command | Purpose | Skill with details |
-|---------|---------|-------------------|
-| `winapp init [dir]` | Add Windows platform support to existing project | setup |
-| `winapp restore [dir]` | Reinstall SDK packages from config | setup |
-| `winapp update` | Check for and install newer SDK versions | setup |
-| `winapp package <dir>` | Create MSIX installer from built app | package |
-| `winapp run <dir>` | Register loose layout + launch with identity | identity, setup |
-| `winapp create-debug-identity [exe]` | Register sparse package for identity | identity |
-| `winapp cert generate` | Create self-signed dev certificate | signing |
-| `winapp cert install <cert>` | Trust certificate (requires admin) | signing |
-| `winapp sign <file> <cert>` | Code-sign MSIX or exe | signing |
-| `winapp manifest generate [dir]` | Create appxmanifest.xml only | manifest |
-| `winapp manifest update-assets <img>` | Regenerate icon assets from source image | manifest |
-| `winapp tool <name> [args]` | Run Windows SDK tools directly | troubleshoot |
-| `winapp store [args]` | Microsoft Store CLI commands | package |
-| `winapp create-external-catalog <dir>` | Generate catalog for sparse packages | identity |
-| `winapp ui <subcommand>` | UI automation (inspect, click, screenshot) | ui-automation |
-
-Run `winapp --cli-schema` for the complete CLI reference as JSON.
+| Skill | When to read it |
+|-------|----------------|
+| **identity-and-setup** | Project setup, `winapp init`, manifest authoring, package identity, framework-specific guidance. |
+| **packaging-and-signing** | MSIX packaging, certificate management, code signing, distribution. |
+| **windows-platform-apis** | Windows SDK/App SDK access from any framework, SDK installation, projections. |
+| **ui-automation** | Inspecting and interacting with running app UIs. Run `winapp ui --help` for commands. |
 
 ## Framework-specific guidance
 
@@ -112,7 +99,7 @@ Run `winapp --cli-schema` for the complete CLI reference as JSON.
 
 ### .NET (WPF, WinForms, Console)
 - **Setup:** `winapp init --use-defaults`
-- **Run with identity:** `winapp init` auto-adds the `Microsoft.Windows.SDK.BuildTools.WinApp` NuGet package, so just `dotnet run` registers a loose layout package and launches with identity. Without the NuGet package, use `dotnet build` then `winapp run ./bin/Debug`.
+- **Run with identity:** use `dotnet build` then `winapp run ./bin/Debug/<path-to-output>`.
 - **Package:** `dotnet build -c Release`, then `winapp package bin\Release\net10.0-windows --cert devcert.pfx`
 - No native addons needed — .NET has direct Windows API access via `Microsoft.Windows.SDK.NET.Ref`
 - Guide: https://github.com/microsoft/WinAppCli/blob/main/docs/guides/dotnet.md
