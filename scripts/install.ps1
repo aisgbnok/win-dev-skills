@@ -60,6 +60,8 @@ if ($Uninstall) {
     if (Test-Path $ToolsTarget) { $itemsToRemove += "  - WinApp CLI: $ToolsTarget" }
     if (Test-Path $PluginTarget) { $itemsToRemove += "  - Copilot plugin: $PluginTarget" }
     $itemsToRemove += "  - PATH entry for tools directory"
+    $itemsToRemove += "  - NuGet source 'WinApp-Dev' (if registered)"
+    $itemsToRemove += "  - Legacy .winui3-agent directory (if exists)"
 
     foreach ($item in $itemsToRemove) { Write-Host $item -ForegroundColor Gray }
     Write-Host ""
@@ -79,15 +81,11 @@ if ($Uninstall) {
         Write-Host "[SKIP] Tools directory not found" -ForegroundColor Gray
     }
 
-    # Remove parent .winapp if empty
-    if ((Test-Path $AgentDir) -and @(Get-ChildItem $AgentDir -Force -ErrorAction SilentlyContinue).Count -eq 0) {
-        Remove-Item $AgentDir -Force
-    }
-
-    # Remove tools from user PATH
+    # Remove tools from user PATH (also clean legacy paths)
     $userPath = [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::User)
     if ($userPath) {
-        $parts = $userPath -split ";" | Where-Object { $_ -ne $ToolsTarget -and $_ -ne "" }
+        $legacyToolsDir = Join-Path $env:USERPROFILE ".winui3-agent\tools"
+        $parts = $userPath -split ";" | Where-Object { $_ -ne $ToolsTarget -and $_ -ne $legacyToolsDir -and $_ -ne "" }
         $newPath = $parts -join ";"
         if ($newPath -ne $userPath) {
             [Environment]::SetEnvironmentVariable("PATH", $newPath, [EnvironmentVariableTarget]::User)
@@ -96,6 +94,15 @@ if ($Uninstall) {
             Write-Host "[SKIP] Tools directory was not on PATH" -ForegroundColor Gray
         }
     }
+
+    # Remove legacy NuGet source
+    try {
+        $existingSources = dotnet nuget list source 2>$null
+        if ($existingSources -match "WinApp-Dev") {
+            dotnet nuget remove source "WinApp-Dev" 2>$null | Out-Null
+            Write-Host "[OK] Removed NuGet source 'WinApp-Dev'" -ForegroundColor Green
+        }
+    } catch { }
 
     # Remove Copilot plugin
     $copilotAvailable = $false
@@ -120,6 +127,12 @@ if ($Uninstall) {
         Write-Host "[OK] Removed legacy .winui3-agent directory" -ForegroundColor Green
     }
 
+    # Remove .winapp directory (tools already removed above, this gets uninstall scripts)
+    if (Test-Path $AgentDir) {
+        Remove-Item $AgentDir -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "[OK] Removed $AgentDir" -ForegroundColor Green
+    }
+
     Write-Host ""
     Write-Host "Uninstall complete. Open a NEW terminal for PATH changes." -ForegroundColor Green
     Write-Host ""
@@ -134,9 +147,11 @@ Write-Host "================================================" -ForegroundColor C
 Write-Host "  Windows Development Skills - Installer" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "  1. Copy WinApp CLI to ~/.winapp/tools/" -ForegroundColor Gray
-Write-Host "  2. Add tools directory to your user PATH" -ForegroundColor Gray
-Write-Host "  3. Install Copilot CLI plugin" -ForegroundColor Gray
+Write-Host "  1. Clean up previous installation (if any)" -ForegroundColor Gray
+Write-Host "  2. Copy WinApp CLI to ~/.winapp/tools/" -ForegroundColor Gray
+Write-Host "  3. Add tools directory to your user PATH" -ForegroundColor Gray
+Write-Host "  4. Install WinUI 3 project templates" -ForegroundColor Gray
+Write-Host "  5. Install Copilot CLI plugin" -ForegroundColor Gray
 Write-Host ""
 
 $response = Read-Host "Proceed with installation? (Y/N)"
@@ -157,7 +172,63 @@ $ToolsSrcDir = Join-Path $BundleRoot "tools"
 $PluginDir = Join-Path $BundleRoot "plugin"
 
 # ============================================================================
-# Step 0: Check for conflicting MSIX-installed winapp
+# Step 0: Clean up previous installation (silent)
+# ============================================================================
+Write-Host "[0/5] Cleaning up previous installation..." -ForegroundColor Cyan
+
+# Remove legacy .winui3-agent directory and its PATH entry
+$legacyDir = Join-Path $env:USERPROFILE ".winui3-agent"
+$legacyToolsDir = Join-Path $legacyDir "tools"
+if (Test-Path $legacyDir) {
+    Remove-Item $legacyDir -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "  [OK] Removed legacy .winui3-agent directory" -ForegroundColor Green
+}
+
+# Remove legacy NuGet source
+try {
+    $existingSources = dotnet nuget list source 2>$null
+    if ($existingSources -match "WinApp-Dev") {
+        dotnet nuget remove source "WinApp-Dev" 2>$null | Out-Null
+        Write-Host "  [OK] Removed legacy NuGet source 'WinApp-Dev'" -ForegroundColor Green
+    }
+} catch { }
+
+# Remove legacy and current PATH entries
+$userPath = [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::User)
+if ($userPath) {
+    $parts = $userPath -split ";" | Where-Object {
+        $_ -ne "" -and
+        $_ -ne $ToolsTarget -and
+        $_ -ne $legacyToolsDir
+    }
+    $cleanPath = $parts -join ";"
+    if ($cleanPath -ne $userPath) {
+        [Environment]::SetEnvironmentVariable("PATH", $cleanPath, [EnvironmentVariableTarget]::User)
+        Write-Host "  [OK] Cleaned legacy PATH entries" -ForegroundColor Green
+    }
+}
+
+# Remove existing tools directory (will be replaced)
+if (Test-Path $ToolsTarget) {
+    Remove-Item $ToolsTarget -Recurse -Force -ErrorAction SilentlyContinue
+    Write-Host "  [OK] Removed previous WinApp CLI installation" -ForegroundColor Green
+}
+
+# Uninstall existing Copilot plugin
+$copilotAvailable = $false
+try { $null = Get-Command copilot -ErrorAction Stop; $copilotAvailable = $true } catch { }
+if ($copilotAvailable) {
+    $pluginList = & copilot plugin list 2>&1
+    if ($pluginList -match "win-dev-skills") {
+        & copilot plugin uninstall win-dev-skills 2>&1 | Out-Null
+        Write-Host "  [OK] Removed previous Copilot plugin" -ForegroundColor Green
+    }
+}
+
+Write-Host ""
+
+# ============================================================================
+# Step 1: Check for conflicting MSIX-installed winapp
 # ============================================================================
 $winappMsix = Get-AppxPackage -Name "winapp" -ErrorAction SilentlyContinue
 $winappDevMsix = Get-AppxPackage -Name "winapp-dev" -ErrorAction SilentlyContinue
@@ -184,9 +255,9 @@ if ($conflicts.Count -gt 0) {
 }
 
 # ============================================================================
-# Step 1: Install WinApp CLI
+# Step 2: Install WinApp CLI
 # ============================================================================
-Write-Host "[1/3] Installing WinApp CLI..." -ForegroundColor Cyan
+Write-Host "[2/5] Installing WinApp CLI..." -ForegroundColor Cyan
 
 # Detect architecture
 $ArchDir = switch ($env:PROCESSOR_ARCHITECTURE) {
@@ -227,9 +298,9 @@ if ($env:PATH -notlike "*$ToolsTarget*") { $env:PATH = "$ToolsTarget;$env:PATH" 
 Write-Host ""
 
 # ============================================================================
-# Step 2: Install WinUI 3 templates (from public NuGet.org)
+# Step 3: Install WinUI 3 templates (from public NuGet.org)
 # ============================================================================
-Write-Host "[2/3] Checking WinUI 3 project templates..." -ForegroundColor Cyan
+Write-Host "[3/5] Checking WinUI 3 project templates..." -ForegroundColor Cyan
 
 $dotnetAvailable = $false
 try { $null = Get-Command dotnet -ErrorAction Stop; $dotnetAvailable = $true } catch { }
@@ -250,9 +321,9 @@ if ($dotnetAvailable) {
 Write-Host ""
 
 # ============================================================================
-# Step 3: Install Copilot CLI plugin
+# Step 4: Install Copilot CLI plugin
 # ============================================================================
-Write-Host "[3/3] Installing Copilot CLI plugin..." -ForegroundColor Cyan
+Write-Host "[4/5] Installing Copilot CLI plugin..." -ForegroundColor Cyan
 
 $copilotAvailable = $false
 try { $null = Get-Command copilot -ErrorAction Stop; $copilotAvailable = $true } catch { }
@@ -275,6 +346,42 @@ if ($copilotAvailable -and (Test-Path $PluginDir)) {
 } else {
     Write-Host "[SKIP] Install Copilot CLI first, then run: copilot plugin install `"$PluginDir`"" -ForegroundColor Yellow
 }
+Write-Host ""
+
+# ============================================================================
+# Step 5: Place uninstall scripts in ~/.winapp/
+# ============================================================================
+Write-Host "[5/5] Placing uninstall scripts..." -ForegroundColor Cyan
+
+if (-not (Test-Path $AgentDir)) {
+    New-Item -ItemType Directory -Path $AgentDir -Force | Out-Null
+}
+
+# Copy install.ps1 (which contains the -Uninstall logic) to ~/.winapp/
+$uninstallTarget = Join-Path $AgentDir "uninstall.ps1"
+Copy-Item $PSCommandPath $uninstallTarget -Force
+
+# Generate uninstall.cmd for easy double-click uninstall
+$uninstallCmdContent = @"
+@echo off
+echo.
+echo ================================================
+echo  Windows Development Skills - Uninstall
+echo ================================================
+echo.
+powershell.exe -ExecutionPolicy Bypass -File "%~dp0uninstall.ps1" -Uninstall
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo Uninstall completed. Open a NEW terminal for PATH changes.
+) else (
+    echo.
+    echo Uninstall encountered an error.
+)
+echo.
+pause
+"@
+Set-Content -Path (Join-Path $AgentDir "uninstall.cmd") -Value $uninstallCmdContent -NoNewline
+Write-Host "[OK] Uninstall scripts placed in $AgentDir" -ForegroundColor Green
 Write-Host ""
 
 # ============================================================================
