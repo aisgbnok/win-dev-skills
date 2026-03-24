@@ -1,7 +1,7 @@
 {
   "name": "win-dev-skills",
-  "description": "Complete Windows app development toolkit. Includes two agents: (1) winapp-cli agent for MSIX packaging, code signing, certificates, Windows SDK/App SDK setup, package identity, appxmanifest authoring, and Microsoft Store distribution across all frameworks (Electron, .NET, C++, Rust, Flutter, Tauri); (2) winui3-builder agent for building WinUI 3 desktop apps with live UI automation via Raka, XAML hot-reload, and WinUI 3 best practices.",
-  "version": "0.1.4",
+  "description": "Complete Windows app development toolkit. Includes two agents: (1) winapp agent for MSIX packaging, code signing, certificates, Windows SDK/App SDK setup, package identity, appxmanifest authoring, and Microsoft Store distribution across all frameworks (Electron, .NET, C++, Rust, Flutter, Tauri); (2) winui3 agent that orchestrates specialist sub-agents (Analyzer, Designer, Architect, Builder, Tester) to build production-quality WinUI 3 desktop apps with live UI verification.",
+  "version": "0.1.6",
   "author": {
     "name": "Microsoft",
     "url": "https://github.com/microsoft/win-dev-skills"
@@ -51,7 +51,6 @@
     "winui3",
     "winui",
     "xaml",
-    "raka",
     "automation"
   ],
   "category": "windows-development",
@@ -67,8 +66,7 @@
     "certificate",
     "distribution",
     "winui3",
-    "xaml",
-    "raka"
+    "xaml"
   ],
   "agents": "agents/",
   "skills": [
