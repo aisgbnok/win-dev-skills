@@ -301,11 +301,24 @@ Read the requirements: {WORKSPACE}/requirements.md
 ## Rules
 1. Follow MVVM with CommunityToolkit.Mvvm ([ObservableProperty], [RelayCommand])
 2. Use Microsoft.Extensions.DependencyInjection for DI
-3. ViewModels must NEVER reference UI types — abstract behind INavigationService/IDialogService
+3. ViewModels must NEVER reference UI types. You MUST define service interfaces for ALL of these UI concerns:
+   - INavigationService — page navigation (abstracts Frame.Navigate)
+   - IThemeService — theme switching (abstracts FrameworkElement.RequestedTheme / ElementTheme)
+   - IDispatcherService — UI thread marshaling (abstracts DispatcherQueue.TryEnqueue)
+   - IDialogService — modal dialogs (abstracts ContentDialog — implementation needs XamlRoot from View)
+   - IClipboardService — clipboard access (abstracts Windows.ApplicationModel.DataTransfer.Clipboard)
+   If a ViewModel needs ANY other UI capability, define an interface for it.
+   Do NOT leave this for the Builder to figure out — list every service interface explicitly.
 4. Apply the sample-first rule: for any unfamiliar API, search sample repos before using
 5. Document async/threading considerations for each API
 6. Specify exact NuGet packages with rationale
 7. Model page states with enums, not scattered booleans
+8. When multiple ViewModels share behavior (logging, device refresh, clipboard), define a ViewModelBase class with shared methods
+
+## Output Size Guideline
+Keep the blueprint to ~15-20KB. Focus on structure, key APIs, and patterns. If you have deep domain documentation (protocol specs, command references), put them in a separate supplementary file at {WORKSPACE}/protocol-reference.md — the Builder will read it when implementing that feature.
+
+Do NOT re-describe the UI layout — reference the design spec for that. Your job is HOW to build, not WHAT to build.
 
 ## Output
 Save your blueprint to: {WORKSPACE}/blueprint.md
@@ -340,6 +353,43 @@ Read the blueprint: {WORKSPACE}/blueprint.md
 - `winapp` — Windows App CLI for running apps with package identity and UI automation
 - File read/write/edit for creating and modifying source files
 - PowerShell for any shell commands
+
+## MVVM Anti-Patterns — NEVER Do These
+
+Your ViewModels must NOT contain ANY of these imports:
+- ❌ `using Microsoft.UI.Xaml;`
+- ❌ `using Microsoft.UI.Xaml.Controls;`
+- ❌ `using Microsoft.UI.Xaml.Media;`
+- ❌ `using Microsoft.UI.Dispatching;`
+- ❌ `using Windows.ApplicationModel.DataTransfer;`
+- ❌ `using Microsoft.UI.Windowing;`
+
+If you need these capabilities, use the service interfaces defined in the blueprint:
+- Need to change theme? → Use `IThemeService.SetTheme(int themeIndex)`
+- Need to run on UI thread? → Use `IDispatcherService.Enqueue(action)`
+- Need clipboard? → Use `IClipboardService.SetTextAsync(text)`
+- Need to show a dialog? → Use `IDialogService.ShowConfirmationAsync(title, message)`
+- Need to navigate? → Use `INavigationService.NavigateTo(pageType)`
+
+Fire-and-forget async calls (`_ = SomeMethodAsync()`) MUST have try-catch wrappers.
+Never let an exception silently disappear.
+
+## CommunityToolkit.Mvvm — Use Partial Properties (NOT Fields)
+
+ALWAYS use this syntax:
+```csharp
+[ObservableProperty]
+public partial bool IsOnline { get; set; } = true;
+
+[ObservableProperty]
+public partial string? StatusText { get; set; }
+```
+
+NEVER use this syntax (generates warnings, deprecated since Toolkit 8.4):
+```csharp
+[ObservableProperty] private bool _isOnline = true;  // ← WRONG
+[ObservableProperty] private string? _statusText;     // ← WRONG
+```
 
 ## MANDATORY Build & Run Workflow
 

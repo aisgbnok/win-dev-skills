@@ -851,4 +851,54 @@ var result = await dialog.ShowAsync();
 
 ---
 
+## 9. Known WinUI 3 / CommunityToolkit Limitations
+
+### SettingsCard inside SettingsExpander.Items
+- `SettingsCard` with `IsClickEnabled="True"` placed inside `SettingsExpander.Items` may not render correctly — the card can be invisible or missing its click target.
+- Known accessibility issue: SettingsCard automation peer may not implement the expected invoke pattern ([GitHub #391](https://github.com/CommunityToolkit/Windows/issues/391)).
+- **Workaround**: Place clickable `SettingsCard` elements as standalone cards outside the `SettingsExpander`, directly in the parent `StackPanel`. Use `SettingsExpander.Items` only for non-clickable display items.
+- Example:
+  ```xml
+  <!-- ✅ CORRECT: Clickable cards outside the expander -->
+  <controls:SettingsExpander Header="About" Description="App info">
+      <controls:SettingsExpander.Items>
+          <controls:SettingsCard Header="Version" Description="1.0.0" />  <!-- display only -->
+      </controls:SettingsExpander.Items>
+  </controls:SettingsExpander>
+  <controls:SettingsCard Header="Check for updates" IsClickEnabled="True" Command="{x:Bind ...}" />
+  <controls:SettingsCard Header="What's New" IsClickEnabled="True" Command="{x:Bind ...}" />
+  
+  <!-- ❌ WRONG: Clickable cards inside expander items — may not render -->
+  <controls:SettingsExpander Header="About">
+      <controls:SettingsExpander.Items>
+          <controls:SettingsCard Header="Check for updates" IsClickEnabled="True" />  <!-- may be invisible -->
+      </controls:SettingsExpander.Items>
+  </controls:SettingsExpander>
+  ```
+
+### ContentDialog requires XamlRoot
+- `ContentDialog.XamlRoot` MUST be set before calling `ShowAsync()` — omitting it causes a crash, not a warning.
+- The `XamlRoot` must come from the View layer (code-behind or service), never from a ViewModel.
+
+### x:Bind does not work in Style Setters
+- Use `{Binding}` (reflection-based) inside `Style.Setters` — `x:Bind` is not supported there.
+
+## 10. Design Spec Size Guideline
+
+Keep the design spec to **~10-15KB**. Focus on:
+- Pages, controls, and layout (what the app looks like)
+- Navigation pattern and page list
+- Brand identity and visual style
+- Wireframes (ASCII art)
+
+Do NOT include:
+- `x:Bind` binding expressions (that's the Builder's job)
+- NuGet package suggestions (that's the Architect's job)
+- Implementation details like `DispatcherQueueTimer` or threading concerns
+- API usage patterns
+
+The design spec describes **WHAT** the app looks like. The blueprint describes **HOW** to build it.
+
+---
+
 *End of Designer Knowledge Bundle*

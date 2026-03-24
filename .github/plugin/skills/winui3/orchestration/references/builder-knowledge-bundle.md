@@ -126,7 +126,44 @@ winapp ui scroll <container-id> -a <appname> --direction down --amount 3
 
 ---
 
-## 6. Key Rules
+## 6. MVVM Rules for ViewModels
+
+### Banned Imports — NEVER use these in ViewModel files:
+- ❌ `using Microsoft.UI.Xaml;`
+- ❌ `using Microsoft.UI.Xaml.Controls;`
+- ❌ `using Microsoft.UI.Xaml.Media;`
+- ❌ `using Microsoft.UI.Dispatching;`
+- ❌ `using Windows.ApplicationModel.DataTransfer;`
+- ❌ `using Microsoft.UI.Windowing;`
+
+Use service interfaces from the blueprint instead (IThemeService, IDispatcherService, IClipboardService, IDialogService, INavigationService).
+
+### CommunityToolkit.Mvvm — Partial Properties (NOT Fields)
+```csharp
+// ✅ CORRECT (Toolkit 8.4+):
+[ObservableProperty]
+public partial bool IsOnline { get; set; } = true;
+
+// ❌ WRONG (deprecated, generates warnings):
+[ObservableProperty] private bool _isOnline = true;
+```
+
+### Async Error Handling
+```csharp
+// ❌ WRONG — fire-and-forget silently swallows exceptions:
+_ = ConnectToDeviceAsync(value);
+
+// ✅ CORRECT — wrap in try-catch:
+private async void OnSelectedDeviceChanged(DeviceInfo? value)
+{
+    try { await ConnectToDeviceAsync(value); }
+    catch (Exception ex) { AddLogEntry($"Error: {ex.Message}"); }
+}
+```
+
+---
+
+## 7. Key Rules
 
 1. **Build complete UI before first launch** — write ALL XAML elements first, then launch once. Don't launch with partial UI and iterate. Use `winapp ui inspect` to verify element presence and clipping BEFORE taking screenshots. Reserve screenshots for visual polish, not discovering missing elements.
 2. **Scaffold first, features second** — for new apps, get a blank app building and running before adding features. Add features one at a time.

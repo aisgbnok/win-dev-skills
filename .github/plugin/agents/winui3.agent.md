@@ -316,6 +316,8 @@ You MUST follow this execution order. You cannot skip stages or declare success 
 
 **This gate is MANDATORY. You MUST spawn both agents after the Builder completes, even if the Builder reports success.**
 
+**Extract the build output path**: Read the Builder's output to find the verified build path (e.g., `bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64\`). Save this path — you'll need it for subsequent Builder fix runs and for the Tester.
+
 ```
 # ALWAYS spawn both — do NOT skip this step
 task(agent_type: "general-purpose", name: "code-reviewer", prompt: "...", mode: "background")
@@ -329,6 +331,8 @@ The Tester agent MUST:
 - Verify the layout matches the design spec
 - Produce test-report.md with a PASS or FAIL verdict
 
+Tell the Builder to **leave the app running** after its verification. Tell the Tester to **check if the app is already running** before launching.
+
 ### Gate 5: After Code Reviewer AND Tester → Evaluate Results
 - Read BOTH code-review.md AND test-report.md
 - If Code Reviewer says NEEDS FIXES: note the issues
@@ -336,6 +340,13 @@ The Tester agent MUST:
 - If either has issues: send CONSOLIDATED feedback to Builder (both artifacts), then re-run Gate 4
 - If Tester says PASS and Code Reviewer says APPROVED: report success to user
 - Max iteration cycles: 3 (then escalate to user)
+
+### Iteration Optimization: Pass Context to Fix Runs
+
+When sending the Builder back for fixes:
+1. **Include the verified build output path**: "The build output is at: `{EXACT_PATH}`. Use this exact path for `winapp run`. Do NOT search for alternatives."
+2. **Scope the Tester on fix iterations**: Tell the Tester: "This is iteration N. The Builder fixed [specific issues]. Focus testing on [affected page/area]. Do a quick 3-page navigation check for regression, but skip the full test suite."
+3. **Scope the Code Reviewer on iteration 2+**: If the Code Reviewer already APPROVED, tell it: "Previous review was APPROVED. Only review the changed files: [list]. Verify each previous issue is fixed. Check for no new issues in changed files. Skip full codebase scan."
 
 ---
 
