@@ -516,7 +516,8 @@ Verdict: PASS or FAIL (with blockers, major issues, minor issues)
 1. **After Analyzer**: "Here are the requirements I've gathered. Does this look complete?"
 2. **After Design Reviewer APPROVED**: "The design has been reviewed and approved. Here's a summary. Shall I proceed with architecture and building?"
 3. **After Tester PASS**: "The app has been built and tested successfully. Here's a summary of the results."
-4. **On iteration limit**: "I've iterated [N] times on [stage] but there are still issues. Here's what remains. How would you like to proceed?"
+4. **After Retrospective written**: "I've written a retrospective with [N] improvement recommendations. Consider sharing it to help improve the agents."
+5. **On iteration limit**: "I've iterated [N] times on [stage] but there are still issues. Here's what remains. How would you like to proceed?"
 
 ### When to Ask vs. Proceed
 - **Ask**: When requirements are ambiguous, when the user needs to confirm scope, when iteration limits are reached
@@ -546,7 +547,60 @@ Before reporting that the task is complete, verify ALL of these:
 - [ ] **test-report.md verdict is PASS** — not FAIL, not missing
 - [ ] **Screenshots exist** from the Tester showing the running app
 - [ ] **The app is actually running** — the Tester confirmed it launches and is interactive
+- [ ] **RETROSPECTIVE.md written** — ALWAYS, regardless of pass or fail (see Final Step below)
 
-If ANY of these are false, you are NOT done. Go back and spawn the missing agents.
+If ANY of the first 5 are false, you are NOT done. Go back and spawn the missing agents.
+The retrospective (item 6) is written regardless — even if items 1-5 failed.
 
 **Common mistake**: The Builder says "build succeeded" and you conclude the task is done. NO — the Builder building successfully is Gate 4, not the end. You still MUST run Gate 5 (Code Reviewer + Tester).
+
+---
+
+## Final Step: Write Retrospective (ALWAYS — pass or fail)
+
+**This step runs regardless of outcome** — whether the Tester passed, the Builder got stuck, or you hit the iteration limit. Failed and struggling runs are the most valuable for improvement.
+
+After the pipeline reaches a terminal state (Tester PASS, iteration limit reached, or unresolvable failure), write `RETROSPECTIVE.md` in the project root. You have all the context — every agent's duration, every artifact, every iteration. Document it.
+
+Include these sections:
+
+### 1. Timing Breakdown
+- Every agent invocation: name, duration (seconds), run number, parallelized?
+- Total time, wall-clock time, time by category
+- The single longest agent run and why
+
+### 2. Stage-by-Stage Analysis
+For each stage: what it did, what went well, what went wrong, quality rating (★).
+Analyze each Builder run separately if there were multiple.
+
+### 3. Iteration Analysis
+For each iteration cycle (Builder→Reviewer/Tester→Builder):
+- What issues triggered it?
+- Root cause chain: which upstream agent could have prevented this?
+- Total time wasted (fix + re-review + re-test)
+- Gap type:
+  - **Knowledge gap** — missing info in prompts/bundles/skills (e.g., undocumented WinUI limitation)
+  - **Process gap** — pipeline didn't pass the right context (e.g., missing build output path)
+  - **Agent behavior gap** — agent had knowledge but didn't apply it
+  - **Design gap** — Designer specified something that doesn't work in practice
+
+### 4. Knowledge Gap Inventory
+Every issue where an agent lacked knowledge it should have had. For each: what was the gap, which bundle/skill should contain it, what exact content to add.
+
+### 5. Process Gap Inventory
+Every inefficiency in the orchestration process. For each: what happened, what should have been different, what specific change to make.
+
+### 6. Artifact Quality Assessment
+Were artifacts the right size? Did any contain information belonging in a different artifact? Did the Builder have too much or too little context?
+
+### 7. Improvement Recommendations
+Categorize as CRITICAL / HIGH / MEDIUM / LOW with estimated time savings. For each, specify exactly where to apply the fix (which prompt, bundle, skill, or orchestrator logic).
+
+### 8. Optimal Pipeline Projection
+What the time would have been with all CRITICAL + HIGH fixes applied.
+
+---
+
+After writing the retrospective, present the results to the user and suggest:
+
+> "I've written a retrospective to `RETROSPECTIVE.md`. It identified [N] improvement opportunities. If you'd like to help improve the Windows development agents, consider [opening an issue](https://github.com/microsoft/win-dev-skills/issues) with this file attached — especially if the pipeline struggled or produced unexpected results."

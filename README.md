@@ -93,3 +93,9 @@ This project welcomes contributions and suggestions. Please see [SECURITY.md](SE
 5. **For large skills (>8 KB):** Use a `references/` subdirectory to store detailed content. Keep `SKILL.md` compact (~4-5 KB) with quick-reference tables and an overview, and put detailed docs in `references/*.md` that the agent loads only when needed. See `wpf-migration` for an example of this pattern.
 6. **Quality bar:** Every skill should have at minimum a Quick Reference section, at least 3 rules with code examples, an Anti-Patterns section, and a Validation Checklist.
 7. **For orchestration:** If the skill is used by a specialist agent in the orchestration pipeline, update the relevant knowledge bundle in `skills/winui3/orchestration/references/` and the inline-vs-link table in `agents/winui3.agent.md`.
+
+## Help Us Improve
+
+The orchestration pipeline automatically generates a `RETROSPECTIVE.md` file after each build. It analyzes timing, identifies knowledge gaps, and suggests improvements.
+
+If you'd like to help improve the agents, [open an issue](https://github.com/microsoft/win-dev-skills/issues) with your `RETROSPECTIVE.md` attached. These retrospectives directly drive improvements to the knowledge bundles, agent prompts, and pipeline logic.
