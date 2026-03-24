@@ -62,6 +62,135 @@ dotnet build <AppName>.csproj -c Debug -p:Platform=$Platform
 | `XLS0504` / XAML parse error | Typo in XAML namespace, missing `x:DataType` | Check XAML syntax carefully |
 | `NU1101` package not found | NuGet source misconfigured | Check NuGet sources with `dotnet nuget list source` |
 | `NETSDK1004` assets file missing | Need to restore | Run `dotnet restore` first |
+| `XamlCompiler` internal error / cryptic crash | XAML contains unsupported construct | See XAML Compiler Crash Recovery below |
+
+### XAML Compiler Crash Recovery
+
+When the XAML compiler crashes with a cryptic internal error (no helpful line number), do NOT spend time guessing. Follow this **binary search** approach:
+
+1. **Comment out half the XAML** in the file that was most recently edited
+2. **Rebuild** — does it compile?
+   - Yes → the problem is in the commented-out half. Uncomment it, comment the other half.
+   - No → the problem is in the remaining half (or a different file).
+3. **Narrow down** by halving again until you find the exact element
+4. **Check against known XAML crash patterns** (see below)
+
+**Known WinUI 3 XAML Compiler Crashes:**
+
+| Pattern | What Happens | Fix |
+|---------|-------------|-----|
+| `<Window.KeyboardAccelerators>` in XAML | XamlCompiler crashes silently (exit code 1, MSB3073, no line number) — `Window` is NOT a `UIElement` and has no `KeyboardAccelerators` property | Attach accelerators to a UIElement (NavigationView, Page, Grid) instead — NOT to Window. See Window vs UIElement rules below. |
+| `<SomeControl.KeyboardAccelerators>` on complex controls | Same crash on some controls | Always verify the control inherits UIElement before using KeyboardAccelerators in XAML |
+| Complex nested `DataTemplate` with `x:Bind` function bindings | Can cause internal compiler error | Simplify the binding or move logic to ViewModel property |
+| Missing `x:DataType` on `DataTemplate` | May crash instead of giving a helpful error | Always add `x:DataType` on every `DataTemplate` |
+| Properties set on `Window` that only exist on `UIElement` | Silent crash — no error message | See Window vs UIElement rules below |
+
+### Window vs UIElement — Critical WinUI 3 Architecture Rule
+
+**Unlike WPF, WinUI 3's `Window` does NOT inherit from `UIElement` or `FrameworkElement`.** It is a completely separate class with a very limited API. Many things that work on `Page`, `Grid`, or any control will **silently crash the XAML compiler** or **throw runtime exceptions** if applied to `Window`.
+
+This is the single most common source of cryptic, hard-to-debug XAML compiler crashes.
+
+#### Window's Actual API Surface (this is ALL it has)
+
+**Properties:**
+| Property | Type | Notes |
+|----------|------|-------|
+| `Content` | `UIElement` | The root visual element (Grid, NavigationView, Frame) |
+| `Title` | `string` | Window title text |
+| `AppWindow` | `AppWindow` | For sizing, position, presenters, custom title bar |
+| `DispatcherQueue` | `DispatcherQueue` | UI thread access |
+| `ExtendsContentIntoTitleBar` | `bool` | Custom title bar |
+| `SystemBackdrop` | `SystemBackdrop` | Mica, Acrylic |
+| `Visible` | `bool` | Read-only visibility state |
+
+**Methods:**
+| Method | Notes |
+|--------|-------|
+| `Activate()` | Show and focus — MUST call after creating |
+| `Close()` | Close the window |
+| `SetTitleBar(UIElement)` | Set custom title bar element |
+
+**Events:** `Activated`, `Closed`, `SizeChanged`, `VisibilityChanged`
+
+**That's it.** No `Resources`, no `DataContext`, no `KeyboardAccelerators`, no `RequestedTheme`, no routed events, no animations, no `FindName()`, no `XamlRoot`.
+
+#### What Window Does NOT Have (will crash or fail silently)
+
+| ❌ Crashes / Fails on Window | Why | ✅ Do This Instead |
+|------------------------------|-----|-------------------|
+| `<Window.KeyboardAccelerators>` | Not a UIElement — crashes XAML compiler silently (MSB3073) | Add to NavigationView, Page, or root Grid |
+| `<Window.Resources>` with complex resources | Limited resource support | Use `<Page.Resources>` or `App.xaml` |
+| `Window.DataContext = viewModel` | No DataContext property | Set on `(FrameworkElement)Content` |
+| `Window.RequestedTheme` | No theme property | `((FrameworkElement)Content).RequestedTheme = theme` |
+| `Window.XamlRoot` | No XamlRoot property | `Content.XamlRoot` |
+| `Window.FindName("element")` | Not in the visual tree | `Content.FindName("element")` or `x:Name` in Page |
+| Storyboard animations on Window | Not animatable | Animate elements inside Content |
+| Routed events (Tapped, PointerPressed) | Not a UIElement | Handle on root Grid or Page |
+| Attached properties on Window | Most won't work | Attach to Content element |
+| `Window.Opacity`, `Window.Visibility` | Not FrameworkElement properties | Use `AppWindow.Show()` / `AppWindow.Hide()` |
+
+#### Architecture Pattern: Keep Window Minimal
+
+```xml
+<!-- MainWindow.xaml — KEEP THIS MINIMAL -->
+<Window x:Class="MyApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Window ONLY sets SystemBackdrop and Content. Nothing else. -->
+    <NavigationView x:Name="NavView"
+                    PaneDisplayMode="LeftCompact"
+                    IsBackButtonVisible="Collapsed"
+                    IsSettingsVisible="True">
+        
+        <!-- KeyboardAccelerators go on NavigationView, NOT Window -->
+        <NavigationView.KeyboardAccelerators>
+            <KeyboardAccelerator Key="Number1" Modifiers="Control" />
+            <KeyboardAccelerator Key="Number2" Modifiers="Control" />
+        </NavigationView.KeyboardAccelerators>
+        
+        <Frame x:Name="ContentFrame" />
+    </NavigationView>
+</Window>
+```
+
+```csharp
+// MainWindow.xaml.cs — window setup only
+public sealed partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+        
+        // Window-level setup (the ONLY things that belong here):
+        Title = "My App";
+        ExtendsContentIntoTitleBar = true;
+        SystemBackdrop = new MicaBackdrop();
+        
+        // Theme goes on Content, NOT Window:
+        ((FrameworkElement)Content).RequestedTheme = ElementTheme.Default;
+        
+        // Sizing goes via AppWindow:
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(1100, 700));
+    }
+}
+```
+
+#### Where Things Belong
+
+| Concern | Where It Goes | NOT Here |
+|---------|-------------|----------|
+| Window chrome (title, backdrop, sizing) | `MainWindow.xaml.cs` via `AppWindow` | — |
+| Navigation (NavigationView, Frame) | `MainWindow.xaml` Content | — |
+| Page content (controls, layout, data) | Individual `Page.xaml` files | `MainWindow.xaml` |
+| Resources (styles, brushes, templates) | `App.xaml` (global) or `Page.Resources` (local) | `Window.Resources` |
+| DataContext / ViewModel binding | `Page` code-behind or `Page.DataContext` | `Window.DataContext` |
+| KeyboardAccelerators | NavigationView, Page, or root Grid | `Window` |
+| Theme setting | `((FrameworkElement)Content).RequestedTheme` | `Window.RequestedTheme` |
+| Dialog XamlRoot | `Content.XamlRoot` | `Window.XamlRoot` |
+
+**Rule of thumb**: `Window` is just a shell. Put all UI, resources, bindings, and behavior in `Page` classes that the `Frame` navigates to.
 
 ---
 
@@ -176,7 +305,25 @@ private async void OnSelectedDeviceChanged(DeviceInfo? value)
 
 ---
 
-## 7. Completion Validation
+## 7. Pre-Flight Checklist (MANDATORY before reporting done)
+
+After the app builds and runs, but BEFORE reporting completion, run through this checklist. Fix any failures before declaring done.
+
+```
+□ grep for "async void" in all ViewModel files — change ALL to "async Task" 
+  (except event handlers which must be async void, but those should have try-catch)
+□ grep for "using Microsoft.UI.Xaml" in ViewModel files — must be ZERO matches
+□ grep for "using Microsoft.UI.Dispatching" in ViewModel files — must be ZERO
+□ Verify every interactive control in XAML has AutomationProperties.Name
+□ Verify all [ObservableProperty] use partial property syntax (not fields)
+□ Verify no empty catch blocks (every catch should log or handle)
+□ Build with zero warnings: dotnet build -p:Platform=$Platform -warnaserror
+□ All pages from design spec are present and navigable (verify with screenshots)
+```
+
+---
+
+## 8. Completion Validation
 
 Before reporting completion, you MUST:
 

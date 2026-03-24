@@ -883,6 +883,18 @@ var result = await dialog.ShowAsync();
 ### x:Bind does not work in Style Setters
 - Use `{Binding}` (reflection-based) inside `Style.Setters` — `x:Bind` is not supported there.
 
+### Window Is NOT a UIElement
+WinUI 3's `Window` does not inherit from `UIElement` or `FrameworkElement` (unlike WPF). When designing, **never specify features on the Window itself** — they will crash the XAML compiler silently.
+
+| ❌ Don't Specify This | ✅ Specify This Instead |
+|----------------------|------------------------|
+| "Add keyboard shortcuts to the Window" | "Add keyboard shortcuts to the NavigationView" |
+| "Set theme on the Window" | "Set theme on the root FrameworkElement (Content)" |
+| "Put resources in Window.Resources" | "Put resources in App.xaml or Page.Resources" |
+| "Handle keyboard events on the Window" | "Handle on NavigationView, Page, or root Grid" |
+
+**Design rule**: In your design spec, always assign keyboard shortcuts, theme controls, and interactive behavior to the NavigationView or Page level — never to the Window. The Window is just a shell for title bar, backdrop, and sizing.
+
 ## 10. Design Spec Size Guideline
 
 Keep the design spec to **~10-15KB**. Focus on:

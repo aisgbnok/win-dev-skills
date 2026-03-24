@@ -1887,3 +1887,14 @@ public class SettingsViewModel : ObservableObject
 14. **`RoamingSettings` and `RoamingFolder` are deprecated** — do not use them for new apps. Use `LocalSettings` or cloud sync via your own backend.
 
 15. **One `ContentDialog` per XamlRoot at a time** — showing a second dialog while one is active throws. Queue or dismiss existing dialogs first.
+
+16. **Window is NOT a UIElement** — WinUI 3's `Window` class does NOT inherit from `UIElement` or `FrameworkElement`. This is fundamentally different from WPF. Consequences for architecture:
+    - **No `Window.DataContext`** — set DataContext on `(FrameworkElement)window.Content` instead
+    - **No `Window.Resources`** — put resources in `App.xaml` or `Page.Resources`
+    - **No `Window.KeyboardAccelerators`** — will silently crash the XAML compiler. Attach to NavigationView or Page instead
+    - **No `Window.RequestedTheme`** — set on `((FrameworkElement)Content).RequestedTheme`
+    - **No `Window.XamlRoot`** — get from `Content.XamlRoot`
+    - **No routed events on Window** (Tapped, PointerPressed, etc.)
+    - **IThemeService implementation** must cast `Window.Content` to `FrameworkElement` to set theme — NOT the Window itself
+    - **IDialogService implementation** must get `XamlRoot` from a UIElement (via Content), not from Window
+    - **MainWindow.xaml should be minimal** — just NavigationView/Frame as content. All UI goes in Page files.
