@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Installer for Windows Development Skills toolkit.
@@ -316,7 +316,7 @@ if ($dotnetAvailable) {
         Write-Host "[OK] WinUI 3 templates installed (dotnet new winui)" -ForegroundColor Green
     }
 } else {
-    Write-Host "[SKIP] .NET SDK not found — install it, then run: dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates" -ForegroundColor Yellow
+    Write-Host "[SKIP] .NET SDK not found - install it, then run: dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates" -ForegroundColor Yellow
 }
 Write-Host ""
 
@@ -394,12 +394,12 @@ Write-Host ""
 if (Get-Command winapp -ErrorAction SilentlyContinue) {
     Write-Host "    [x] WinApp CLI" -ForegroundColor Green
 } else {
-    Write-Host "    [!] WinApp CLI — open a NEW terminal" -ForegroundColor Yellow
+    Write-Host "    [!] WinApp CLI - open a NEW terminal" -ForegroundColor Yellow
 }
 if ($copilotAvailable) {
-    Write-Host "    [x] Copilot CLI plugin — run 'copilot' to start" -ForegroundColor Green
+    Write-Host "    [x] Copilot CLI plugin - run 'copilot' to start" -ForegroundColor Green
 } else {
-    Write-Host "    [ ] Copilot CLI — install it, then re-run" -ForegroundColor Yellow
+    Write-Host "    [ ] Copilot CLI - install it, then re-run" -ForegroundColor Yellow
 }
 Write-Host ""
 Write-Host "  Open a NEW terminal, then: copilot" -ForegroundColor Cyan
