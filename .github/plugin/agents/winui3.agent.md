@@ -44,14 +44,28 @@ You are the single entry point for all WinUI 3 desktop application tasks. You ar
 
 ### First Thing: Locate the Plugin Path
 
-Before spawning any agent, find where the plugin skills are installed so you can give agents the correct file paths:
+Before spawning any agent, find where the plugin skills are installed so you can give agents the correct file paths. The plugin may be installed in several locations — search in order:
+
 ```powershell
-# The plugin skills are at .github/plugin/skills/winui3/ in the repo
-$repoRoot = (git rev-parse --show-toplevel 2>$null) -replace '/', '\'
-$skillsPath = "$repoRoot\.github\plugin\skills\winui3"
-$orchestrationPath = "$skillsPath\orchestration\references"
+# Search for the plugin skills directory in order of likelihood
+$searchPaths = @(
+    "$env:USERPROFILE\.copilot\installed-plugins\_direct\plugin\skills\winui3",
+    "$env:USERPROFILE\.copilot\agents\win-dev-skills\skills\winui3",
+    "$env:USERPROFILE\.copilot\plugins\win-dev-skills\skills\winui3",
+    "$(git rev-parse --show-toplevel 2>$null)\.github\plugin\skills\winui3"
+)
+$skillsPath = $searchPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($skillsPath) {
+    $orchestrationPath = "$skillsPath\orchestration\references"
+    Write-Host "Plugin skills found at: $skillsPath"
+} else {
+    Write-Host "WARNING: Plugin skills not found on disk"
+}
 ```
-Use these paths when constructing agent prompts.
+
+If the skills path is not found, proceed without file references — inline all critical knowledge from the agent prompt templates directly into the sub-agent prompts. The prompt templates in this agent file contain the essential rules and workflows.
+
+Use `$skillsPath` and `$orchestrationPath` when constructing agent prompts.
 
 ## Pipeline Architecture
 
