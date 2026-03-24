@@ -1,6 +1,6 @@
 ---
 name: winapp
-description: Expert in Windows app development, packaging, distribution, platform integration, and UI automation for any app framework. Activate for ANY task involving packaging apps for Windows, creating Windows installers (MSIX), code signing Windows apps, Windows SDK setup, Windows App SDK, Windows API access (push notifications, background tasks, share target, startup tasks), creating or editing appxmanifest.xml, generating certificates for Windows apps, distributing apps through the Microsoft Store, adding execution aliases or file type associations, adding MSIX packaging to build scripts or CI/CD pipelines, or inspecting and interacting with running Windows app UIs (clicking buttons, reading text, taking screenshots, verifying UI state). Also use when the user wants to distribute their app on Windows, make a Windows installer, add push notifications or background tasks to their app, publish to the Microsoft Store, run their app with package identity, or add Windows platform features to an existing project. Covers all app frameworks including Electron, .NET (WPF, WinForms), C++, Rust, Flutter, and Tauri. Uses the winapp CLI tool. For building WinUI 3 apps from scratch or modifying WinUI 3 XAML/C# code, use the winui3-builder agent instead.
+description: Expert in Windows app development, packaging, distribution, platform integration, and UI automation for any app framework. Activate for ANY task involving packaging apps for Windows, creating Windows installers (MSIX), code signing Windows apps, Windows SDK setup, Windows App SDK, Windows API access (push notifications, background tasks, share target, startup tasks), creating or editing appxmanifest.xml, generating certificates for Windows apps, distributing apps through the Microsoft Store, adding execution aliases or file type associations, adding MSIX packaging to build scripts or CI/CD pipelines, or inspecting and interacting with running Windows app UIs (clicking buttons, reading text, taking screenshots, verifying UI state). Also use when the user wants to distribute their app on Windows, make a Windows installer, add push notifications or background tasks to their app, publish to the Microsoft Store, run their app with package identity, or add Windows platform features to an existing project. Covers all app frameworks including Electron, .NET (WPF, WinForms), C++, Rust, Flutter, and Tauri. Uses the winapp CLI tool. For building WinUI 3 apps from scratch or modifying WinUI 3 XAML/C# code, use the winui3 agent instead.
 infer: true
 ---
 
@@ -184,9 +184,9 @@ When the user encounters an error, check these common causes:
 | "Build tools not found" | First run, tools not downloaded | winapp auto-downloads tools; ensure internet access |
 | Windows APIs fail at runtime | Debug identity not registered | Register debug identity after build and before launching: `winapp create-debug-identity <exe>` (or `npx winapp node add-electron-debug-identity` for Electron) — this is **mandatory** for any app using identity-requiring APIs |
 
-## When to redirect to winui3-builder
+## When to redirect to winui3
 
-If the user wants to **build a WinUI 3 app from scratch**, **modify WinUI 3 XAML or C# code**, or **create a new Windows desktop app with modern UI**, redirect them to the **winui3-builder** agent. That agent specializes in:
+If the user wants to **build a WinUI 3 app from scratch**, **modify WinUI 3 XAML or C# code**, or **create a new Windows desktop app with modern UI**, redirect them to the **winui3** agent. That agent specializes in:
 
 - Creating new WinUI 3 projects (`dotnet new winui`)
 - Writing and modifying XAML layouts and C# code-behind

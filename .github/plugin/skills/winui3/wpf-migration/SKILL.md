@@ -37,7 +37,7 @@ Do NOT attempt to rewrite the entire app in one pass. Break migration into file-
 This reduces token waste and makes errors traceable to specific changes.
 
 ### Rule 3: Avoid Concurrent File Conflicts
-Do NOT have two agents modifying the same project files simultaneously. If the winui3-builder agent is handling this migration, it should read this skill directly — no need for a separate sub-agent. The conflict occurs when a parent agent spawns a child agent and both edit the same files.
+Do NOT have two agents modifying the same project files simultaneously. If the builder agent is handling this migration, it should read this skill directly — no need for a separate sub-agent. The conflict occurs when a parent agent spawns a child agent and both edit the same files.
 
 ### Rule 4: Namespace Alignment (Do FIRST)
 After `dotnet new winui -n <Name>`:

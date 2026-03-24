@@ -42,8 +42,8 @@ trap {
 }
 
 # --- Shared paths ---
-$ToolsTarget = Join-Path $env:USERPROFILE ".winapp\tools"
-$AgentDir = Join-Path $env:USERPROFILE ".winapp"
+$ToolsTarget = Join-Path $env:USERPROFILE ".win-dev-skills\tools"
+$AgentDir = Join-Path $env:USERPROFILE ".win-dev-skills"
 $PluginTarget = Join-Path $env:USERPROFILE ".copilot\agents\win-dev-skills"
 
 # ============================================================================
@@ -85,7 +85,7 @@ if ($Uninstall) {
     $userPath = [Environment]::GetEnvironmentVariable("PATH", [EnvironmentVariableTarget]::User)
     if ($userPath) {
         $legacyToolsDir = Join-Path $env:USERPROFILE ".winui3-agent\tools"
-        $parts = $userPath -split ";" | Where-Object { $_ -ne $ToolsTarget -and $_ -ne $legacyToolsDir -and $_ -ne "" }
+        $parts = $userPath -split ";" | Where-Object { $_ -ne $ToolsTarget -and $_ -ne $legacyToolsDir -and $_ -ne ".winapp\tools" -and $_ -ne "" }
         $newPath = $parts -join ";"
         if ($newPath -ne $userPath) {
             [Environment]::SetEnvironmentVariable("PATH", $newPath, [EnvironmentVariableTarget]::User)
@@ -127,7 +127,7 @@ if ($Uninstall) {
         Write-Host "[OK] Removed legacy .winui3-agent directory" -ForegroundColor Green
     }
 
-    # Remove .winapp directory (tools already removed above, this gets uninstall scripts)
+    # Remove .win-dev-skills directory (tools already removed above, this gets uninstall scripts)
     if (Test-Path $AgentDir) {
         Remove-Item $AgentDir -Recurse -Force -ErrorAction SilentlyContinue
         Write-Host "[OK] Removed $AgentDir" -ForegroundColor Green
@@ -148,7 +148,7 @@ Write-Host "  Windows Development Skills - Installer" -ForegroundColor Cyan
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  1. Clean up previous installation (if any)" -ForegroundColor Gray
-Write-Host "  2. Copy WinApp CLI to ~/.winapp/tools/" -ForegroundColor Gray
+Write-Host "  2. Copy WinApp CLI to ~/.win-dev-skills/tools/" -ForegroundColor Gray
 Write-Host "  3. Add tools directory to your user PATH" -ForegroundColor Gray
 Write-Host "  4. Install WinUI 3 project templates" -ForegroundColor Gray
 Write-Host "  5. Install Copilot CLI plugin" -ForegroundColor Gray
@@ -349,7 +349,7 @@ if ($copilotAvailable -and (Test-Path $PluginDir)) {
 Write-Host ""
 
 # ============================================================================
-# Step 5: Place uninstall scripts in ~/.winapp/
+# Step 5: Place uninstall scripts in ~/.win-dev-skills/
 # ============================================================================
 Write-Host "[5/5] Placing uninstall scripts..." -ForegroundColor Cyan
 
@@ -357,7 +357,7 @@ if (-not (Test-Path $AgentDir)) {
     New-Item -ItemType Directory -Path $AgentDir -Force | Out-Null
 }
 
-# Copy install.ps1 (which contains the -Uninstall logic) to ~/.winapp/
+# Copy install.ps1 (which contains the -Uninstall logic) to ~/.win-dev-skills/
 $uninstallTarget = Join-Path $AgentDir "uninstall.ps1"
 Copy-Item $PSCommandPath $uninstallTarget -Force
 
