@@ -113,6 +113,15 @@ Pipeline: [Code Analyzer ∥ App Inspector] → merge → Designer → Design Re
 ```
 **Critical**: The Designer must REIMAGINE the app for Windows — NOT translate the source app's layout into XAML.
 
+**Framework-specific skills**: After the Code Analyzer identifies the source framework, add migration-relevant skills to downstream agents:
+| Source Framework | Add to Designer, Architect, Builder |
+|-----------------|-------------------------------------|
+| WPF | `wpf-migration/SKILL.md` + `wpf-migration/references/` (namespace mapping, threading, XAML migration, imaging) |
+| Electron | `interop-webview/SKILL.md` (for any web content that needs WebView2) |
+| UWP | `wpf-migration/SKILL.md` (similar patterns apply for UWP→WinUI namespace changes) |
+
+**ALWAYS run the App Inspector for convert-app** — even for WPF/desktop apps. The App Inspector captures screenshots and brand identity. Do NOT skip it and infer brand colors — extract them from the actual source app (CSS variables, XAML resources, theme files).
+
 ### Add Feature
 User wants to add a significant feature to an existing WinUI 3 app.
 ```
@@ -359,8 +368,21 @@ Tell the Builder to **leave the app running** after its verification. Tell the T
 
 When sending the Builder back for fixes:
 1. **Include the verified build output path**: "The build output is at: `{EXACT_PATH}`. Use this exact path for `winapp run`. Do NOT search for alternatives."
-2. **Scope the Tester on fix iterations**: Tell the Tester: "This is iteration N. The Builder fixed [specific issues]. Focus testing on [affected page/area]. Do a quick 3-page navigation check for regression, but skip the full test suite."
+2. **Scope the Tester on fix iterations**: Tell the Tester: "This is iteration N. The Builder fixed [specific issues]. Focus testing on [affected page/area]. Do a quick 3-page navigation check for regression, but skip the full test suite. Maximum 15 verification items."
 3. **Scope the Code Reviewer on iteration 2+**: If the Code Reviewer already APPROVED, tell it: "Previous review was APPROVED. Only review the changed files: [list]. Verify each previous issue is fixed. Check for no new issues in changed files. Skip full codebase scan."
+
+### Stalled Agent Detection and Recovery
+
+Background agents can stall — they stop making progress but don't terminate. Monitor for this:
+
+1. **After spawning a background agent**, check on it periodically with `read_agent`
+2. **If an agent shows the same `tool_calls_completed` count for 3+ consecutive checks (~180s of no progress):**
+   - Stop the stalled agent
+   - Check if it wrote its artifact to disk (e.g., `test-report.md`, `code-review.md`)
+   - If artifact exists: read it and proceed
+   - If artifact is missing: spawn a replacement agent with a **more focused, shorter prompt**
+3. **Focused replacement prompts** should have explicit item caps: "Verify these 10 specific items. Maximum 15 minutes."
+4. **Never wait more than 5 minutes** with zero progress before intervening
 
 ---
 
@@ -576,7 +598,23 @@ The retrospective (item 6) is written regardless — even if items 1-5 failed.
 
 After the pipeline reaches a terminal state (Tester PASS, iteration limit reached, or unresolvable failure), write `RETROSPECTIVE.md` in the project root. You have all the context — every agent's duration, every artifact, every iteration. Document it.
 
-Include these sections:
+Start the retrospective with a metadata header:
+
+```markdown
+# RETROSPECTIVE: <App Name>
+
+**Date**: <date>
+**Plugin version**: <read from plugin.json in the skills directory, or run `copilot plugin list`>
+**Source**: <source app description or "new app">
+**User's original prompt**: 
+> <paste the user's original request exactly as they typed it>
+
+**Final outcome**: <PASS / FAIL / PARTIAL — with brief summary>
+**Total wall-clock time**: <total>
+**Total agent invocations**: <count>
+```
+
+Then include these sections:
 
 ### 1. Timing Breakdown
 - Every agent invocation: name, duration (seconds), run number, parallelized?

@@ -314,9 +314,17 @@ After the app builds and runs, but BEFORE reporting completion, run through this
   (except event handlers which must be async void, but those should have try-catch)
 □ grep for "using Microsoft.UI.Xaml" in ViewModel files — must be ZERO matches
 □ grep for "using Microsoft.UI.Dispatching" in ViewModel files — must be ZERO
+□ Verify every interactive control in XAML has a binding: {x:Bind ViewModel.Property}
+  - TwoWay for editable controls (NumberBox, ComboBox, ToggleSwitch, Slider, TextBox)
+  - OneWay for display controls (TextBlock, ProgressBar, Image)
+  - Command binding on every Button that should do something
+□ Verify every [RelayCommand] in ViewModels is referenced from XAML
 □ Verify every interactive control in XAML has AutomationProperties.Name
 □ Verify all [ObservableProperty] use partial property syntax (not fields)
 □ Verify no empty catch blocks (every catch should log or handle)
+□ Verify no hardcoded colors in XAML (run: Select-String -Path "*.xaml" -Pattern 'Background="#|Foreground="#|Color="#' -Recurse)
+  - Only acceptable in App.xaml for SystemAccentColor overrides
+□ Switch theme to Light mode and verify the app looks correct (no invisible text, broken layout)
 □ Build with zero warnings: dotnet build -p:Platform=$Platform -warnaserror
 □ All pages from design spec are present and navigable (verify with screenshots)
 ```
@@ -453,3 +461,43 @@ After functionality works, do a visual quality check before reporting completion
 - [ ] Corner radius: using `ControlCornerRadius` / `OverlayCornerRadius` tokens?
 - [ ] No unnecessary whitespace or extra chrome?
 - [ ] Brand identity applied: accent color override in App.xaml, app name, logo?
+- [ ] **Light mode test**: Switch theme to Light and verify the app looks correct (no invisible text, no unreadable controls)
+
+---
+
+## 14. Theme-Aware Brushes — ALWAYS Use These
+
+**NEVER hardcode colors** like `Background="#2D2D2D"` or `Foreground="#FFFFFF"`. These look fine in dark mode but break completely in light mode (invisible text, unreadable controls).
+
+| Purpose | ThemeResource Key |
+|---------|------------------|
+| Card / panel background | `{ThemeResource CardBackgroundFillColorDefaultBrush}` |
+| Card border | `{ThemeResource CardStrokeColorDefaultBrush}` |
+| Layer / inset background | `{ThemeResource LayerFillColorDefaultBrush}` |
+| Subtle fill (hover states) | `{ThemeResource SubtleFillColorSecondaryBrush}` |
+| Primary text | `{ThemeResource TextFillColorPrimaryBrush}` |
+| Secondary text | `{ThemeResource TextFillColorSecondaryBrush}` |
+| Disabled text | `{ThemeResource TextFillColorDisabledBrush}` |
+| Divider / separator | `{ThemeResource DividerStrokeColorDefaultBrush}` |
+| Accent text | `{ThemeResource AccentTextFillColorPrimaryBrush}` |
+| Page background | Mica backdrop handles this — don't set a background |
+| Control background | Controls have built-in themed backgrounds — don't override |
+
+**Common mistakes that break light mode:**
+```xml
+<!-- ❌ WRONG — invisible in light mode -->
+<Grid Background="#1E1E1E">
+    <TextBlock Foreground="#FFFFFF" Text="Hello" />
+</Grid>
+
+<!-- ✅ CORRECT — works in all themes -->
+<Grid Background="{ThemeResource LayerFillColorDefaultBrush}">
+    <TextBlock Foreground="{ThemeResource TextFillColorPrimaryBrush}" Text="Hello" />
+</Grid>
+```
+
+**Pre-build color audit:**
+```powershell
+# Search for hardcoded colors in XAML (should return 0 matches except accent overrides in App.xaml)
+Select-String -Path "*.xaml" -Pattern 'Background="#|Foreground="#|Color="#|Fill="#' -Recurse
+```

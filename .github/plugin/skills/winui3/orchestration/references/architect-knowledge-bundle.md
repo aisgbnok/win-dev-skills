@@ -1898,3 +1898,12 @@ public class SettingsViewModel : ObservableObject
     - **IThemeService implementation** must cast `Window.Content` to `FrameworkElement` to set theme — NOT the Window itself
     - **IDialogService implementation** must get `XamlRoot` from a UIElement (via Content), not from Window
     - **MainWindow.xaml should be minimal** — just NavigationView/Frame as content. All UI goes in Page files.
+
+17. **Transient disposable services need factory injection** — If a service is both `Transient` and `IDisposable` (e.g., a per-recording capture service), do NOT inject the service directly. The DI container creates one instance, the ViewModel disposes it after use, then can't create a new one.
+    - **Register** as Transient: `services.AddTransient<IScreenCaptureService, ScreenCaptureService>();`
+    - **Inject a factory**, not the instance: `Func<IScreenCaptureService>` in the ViewModel constructor
+    - **Create fresh** per operation: `var capture = _captureFactory();`
+    - **Dispose** after the operation completes
+    - If the blueprint specifies a service as Transient, ALWAYS include the factory pattern in the DI registration section and the ViewModel constructor signature.
+
+18. **Template name is `winui`, NOT `winui3`** — use `dotnet new winui -n AppName`. The `winui3` template does not exist.
