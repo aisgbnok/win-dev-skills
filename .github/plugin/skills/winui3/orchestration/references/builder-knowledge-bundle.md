@@ -62,6 +62,7 @@ dotnet build <AppName>.csproj -c Debug -p:Platform=$Platform
 | `XLS0504` / XAML parse error | Typo in XAML namespace, missing `x:DataType` | Check XAML syntax carefully |
 | `NU1101` package not found | NuGet source misconfigured | Check NuGet sources with `dotnet nuget list source` |
 | `NETSDK1004` assets file missing | Need to restore | Run `dotnet restore` first |
+| `CA2024` EndOfStream in async | Using `EndOfStream` in async method | Don't use `stream.EndOfStream` — use `await stream.ReadLineAsync()` and check for `null` instead |
 | `XamlCompiler` internal error / cryptic crash | XAML contains unsupported construct | See XAML Compiler Crash Recovery below |
 
 ### XAML Compiler Crash Recovery
@@ -319,12 +320,15 @@ After the app builds and runs, but BEFORE reporting completion, run through this
   - OneWay for display controls (TextBlock, ProgressBar, Image)
   - Command binding on every Button that should do something
 □ Verify every [RelayCommand] in ViewModels is referenced from XAML
+□ Cross-check EVERY control in the design spec against your XAML — nothing missing?
 □ Verify every interactive control in XAML has AutomationProperties.Name
 □ Verify all [ObservableProperty] use partial property syntax (not fields)
-□ Verify no empty catch blocks (every catch should log or handle)
+□ Verify no empty catch blocks — every catch must at minimum: Debug.WriteLine($"Error: {ex.Message}")
+□ Verify child processes (Process.Start) have cancellation: ct.Register(() => proc.Kill())
 □ Verify no hardcoded colors in XAML (run: Select-String -Path "*.xaml" -Pattern 'Background="#|Foreground="#|Color="#' -Recurse)
   - Only acceptable in App.xaml for SystemAccentColor overrides
-□ Switch theme to Light mode and verify the app looks correct (no invisible text, broken layout)
+□ Switch theme to Light mode and VERIFY the UI visually changes (take screenshot in both themes)
+□ If app has a Settings page with theme selector: actually switch the theme and confirm it applies
 □ Build with zero warnings: dotnet build -p:Platform=$Platform -warnaserror
 □ All pages from design spec are present and navigable (verify with screenshots)
 ```
