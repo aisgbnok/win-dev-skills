@@ -344,9 +344,16 @@ Your job is to create the WinUI 3 project, write all the code, build it, run it,
 and verify it works with screenshots. You do NOT report completion until the app
 is built, running, and visually verified.
 
-## Input
-Read the design spec: {WORKSPACE}/design-spec.md
-Read the blueprint: {WORKSPACE}/blueprint.md
+## IMPORTANT: Progressive Context Loading
+
+Do NOT read all input files at once. Read them PHASE BY PHASE as you work through each step. This keeps your context focused and prevents losing track of instructions.
+
+Input files are at: {WORKSPACE}/
+- design-spec.md — UI specification (pages, controls, layout)
+- blueprint.md — Technical architecture (structure, APIs, packages, MVVM)
+- protocol-reference.md — (if exists) Deep domain documentation
+
+Read ONLY the sections relevant to your current phase. Do NOT read the entire design spec and blueprint before starting.
 
 ## Tools Available
 - `dotnet` — .NET CLI for creating projects, adding packages, building
@@ -354,153 +361,114 @@ Read the blueprint: {WORKSPACE}/blueprint.md
 - File read/write/edit for creating and modifying source files
 - PowerShell for any shell commands
 
-## MVVM Anti-Patterns — NEVER Do These
+## Core MVVM Rules (keep these in mind throughout)
 
 Your ViewModels must NOT contain ANY of these imports:
-- ❌ `using Microsoft.UI.Xaml;`
-- ❌ `using Microsoft.UI.Xaml.Controls;`
-- ❌ `using Microsoft.UI.Xaml.Media;`
+- ❌ `using Microsoft.UI.Xaml;` / `Microsoft.UI.Xaml.Controls;` / `Microsoft.UI.Xaml.Media;`
 - ❌ `using Microsoft.UI.Dispatching;`
 - ❌ `using Windows.ApplicationModel.DataTransfer;`
-- ❌ `using Microsoft.UI.Windowing;`
+Use service interfaces from the blueprint instead (IThemeService, IDispatcherService, etc.)
 
-If you need these capabilities, use the service interfaces defined in the blueprint:
-- Need to change theme? → Use `IThemeService.SetTheme(int themeIndex)`
-- Need to run on UI thread? → Use `IDispatcherService.Enqueue(action)`
-- Need clipboard? → Use `IClipboardService.SetTextAsync(text)`
-- Need to show a dialog? → Use `IDialogService.ShowConfirmationAsync(title, message)`
-- Need to navigate? → Use `INavigationService.NavigateTo(pageType)`
-
-Fire-and-forget async calls (`_ = SomeMethodAsync()`) MUST have try-catch wrappers.
-Never let an exception silently disappear.
-
-## CommunityToolkit.Mvvm — Use Partial Properties (NOT Fields)
-
-ALWAYS use this syntax:
+Use partial property syntax for [ObservableProperty]:
 ```csharp
-[ObservableProperty]
-public partial bool IsOnline { get; set; } = true;
-
-[ObservableProperty]
-public partial string? StatusText { get; set; }
+[ObservableProperty] public partial bool IsOnline { get; set; } = true;  // ✅ CORRECT
+// NOT: [ObservableProperty] private bool _isOnline = true;              // ❌ WRONG
 ```
 
-NEVER use this syntax (generates warnings, deprecated since Toolkit 8.4):
-```csharp
-[ObservableProperty] private bool _isOnline = true;  // ← WRONG
-[ObservableProperty] private string? _statusText;     // ← WRONG
-```
+Fire-and-forget async (`_ = SomeAsync()`) MUST have try-catch. No empty catch blocks.
 
-## MANDATORY Build & Run Workflow
+## MANDATORY Phased Workflow
 
-Follow this EXACT workflow. Do NOT skip steps. Do NOT report completion until step 7 passes.
+### Phase 1: Project Setup
+**Read**: blueprint.md — ONLY the "Project Setup" and "NuGet Packages" sections
+**Do**:
+1. Detect platform: `$Platform = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'Arm64' } else { 'x64' }`
+2. Create project: `dotnet new winui -n {APP_NAME}` (template is `winui`, NOT `winui3`)
+3. Add NuGet packages from the blueprint
+4. Generate icons if logo available: `winapp manifest update-assets <logo-path>`
+5. Verify build: `dotnet build -p:Platform=$Platform`
 
-### Step 1: Detect platform architecture
-```powershell
-$Platform = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'Arm64' } else { 'x64' }
-Write-Host "Building for platform: $Platform"
-```
-CRITICAL: WinUI 3 does NOT support AnyCPU. You MUST use x64 or Arm64.
+### Phase 2: App Shell (MainWindow + Navigation)
+**Read**: design-spec.md — ONLY the "Window", "Navigation", and "Brand Identity" sections
+**Read**: blueprint.md — ONLY the "DI Registration" section
+**Do**:
+1. Set up MainWindow.xaml — KEEP IT MINIMAL (Window is NOT a UIElement):
+   - Only: SystemBackdrop, ExtendsContentIntoTitleBar, NavigationView/Frame as Content
+   - NO KeyboardAccelerators on Window (crashes XAML compiler) — put on NavigationView
+   - NO Resources on Window — use App.xaml or Page.Resources
+2. Set up App.xaml with accent color overrides from brand identity
+3. Create page files (empty shells) for each page in the design spec
+4. Wire up NavigationView navigation in code-behind
+5. Register services and ViewModels in DI (App.xaml.cs)
+6. Build and verify navigation works between pages
 
-### Step 2: Create the project
-```powershell
-dotnet new winui -n {APP_NAME}
-```
-- The `-n` flag creates the subfolder — do NOT mkdir first
-- The template name is `winui`, NOT `winui3`
-- After creation, PRESERVE the template-generated MainWindow.xaml structure — insert your content, don't rewrite the file from scratch
+### Phase 3: Build Each Page (one at a time)
+**For each page in the design spec**:
+1. **Read**: design-spec.md — ONLY that page's section (controls table, layout, wireframe)
+2. **Read**: blueprint.md — ONLY the ViewModel section for that page
+3. **Write** the Page XAML with all controls from the design spec controls table
+4. **Write** the ViewModel with all properties and commands
+5. For EVERY interactive control, verify:
+   - It has `{x:Bind ViewModel.Property, Mode=OneWay/TwoWay}` binding
+   - Every Button has a Command binding
+   - It has `AutomationProperties.Name`
+6. Use `{ThemeResource}` brushes for ALL colors — NEVER hardcode hex colors
+7. **Build** after each page to catch errors early
 
-### Step 3: Add NuGet packages (from blueprint.md)
-```powershell
-cd {APP_NAME}
-dotnet add package CommunityToolkit.Mvvm
-# ... other packages from blueprint
-```
+### Phase 4: Services and Business Logic
+**Read**: blueprint.md — "Services" and "API Usage" sections
+**Read**: protocol-reference.md — if it exists, read when implementing that specific feature
+**Do**:
+1. Implement each service interface from the blueprint
+2. For services that touch UI types (theme, dispatcher, clipboard, dialog):
+   - Implementation references UI types — that's fine (implementations live in the View layer)
+   - Interface stays clean — ViewModel only sees the interface
+3. Wire services into DI registration
 
-### Step 4: Generate app icons from source logo
-If the design spec or requirements include a logo/icon file path:
-```powershell
-# Generate all required MSIX icon assets from the source logo
-winapp manifest update-assets <path-to-logo-file>
-```
-- Use the source app's logo/icon if one was found by the App Inspector (e.g., `.winui-orchestration/brand-logo.png`)
-- The source image should be at least 400x400px for best results
-- Accepts SVG, PNG, ICO, JPG, BMP, GIF
-- If the appxmanifest is not in the current directory, add `--manifest <path>`
-- If the app has a separate light-theme logo variant, add `--light-image <path>`
-- If no logo is available, skip this step — the template defaults will be used
+### Phase 5: Build, Run, and Verify
+**Read**: The pre-flight checklist from builder-knowledge-bundle.md (or below)
+**Do**:
+1. Run the pre-flight checklist:
+   - `Select-String -Path "*.cs" -Pattern "async void" -Recurse` in ViewModel files → should be zero (except event handlers with try-catch)
+   - `Select-String -Path "*.cs" -Pattern "using Microsoft.UI.Xaml" -Recurse` in ViewModel files → should be zero
+   - `Select-String -Path "*.xaml" -Pattern 'Background="#|Foreground="#|Color="#' -Recurse` → should only match App.xaml accent overrides
+   - Verify no empty catch blocks
+2. Build with: `dotnet build -p:Platform=$Platform`
+3. Run with: `winapp run bin\$Platform\Debug\{TFM}\win-{platform-lowercase}\ --debug-output`
+4. Screenshot every page
+5. Switch theme to Light mode → screenshot → verify no broken colors
+6. Cross-check EVERY control in the design spec against the running app — nothing missing?
 
-### Step 5: Write ALL code BEFORE building
-- Create all files: ViewModels, Services, Views/Pages, Converters, Models
-- Write complete XAML for all pages — do NOT launch with a partial UI
-- Follow the design spec for layout, controls, and navigation
-- Follow the blueprint for MVVM structure, DI, and API usage
-- Set AutomationProperties.Name on all interactive controls
-
-### Step 6: Build with correct platform
-```powershell
-dotnet build {APP_NAME}.csproj -c Debug -p:Platform=$Platform
-```
-- If build fails: READ the error, FIX the code, rebuild
-- Common errors:
-  - `NETSDK1005` / AnyCPU → You forgot `-p:Platform=x64` (or Arm64)
-  - `CS0246` unknown type → Check namespace imports, NuGet package versions
-  - XAML parse errors → Check for typos in XAML namespaces, missing x:DataType
-- Iterate until build succeeds with ZERO errors
-- Do NOT proceed to Step 7 until the build succeeds
-
-### Step 7: Run the app with winapp
-```powershell
-# Find the build output — typically:
-# bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64\
-# Check your .csproj for the actual TFM
-winapp run bin\$Platform\Debug\{TFM}\win-{platform-lowercase}\ --debug-output
-```
-- Always use `--debug-output` — it captures debug messages, exceptions, and first-chance errors in the console while the app runs. This is invaluable for diagnosing runtime issues.
-- Note: `--debug-output` prevents other debuggers (like Visual Studio) from attaching. This is fine when the agent is working solo.
-- If `winapp run` itself fails (before the app launches), add `--verbose` for detailed diagnostic output about the registration/launch process.
-- Common issues:
-  - Wrong path → List the build output directory to find the correct folder containing the .exe
-  - HRESULT errors → Search the error code online
-  - RPC_E_WRONG_THREAD → Marshal to UI thread with DispatcherQueue.TryEnqueue()
-
-### Step 8: Verify with screenshots and UI inspection
-```powershell
-# Take a screenshot to verify layout
-winapp ui screenshot -a {appname}
-# Inspect interactive elements
-winapp ui inspect -a {appname} --interactive
-# Navigate to each page and screenshot
-winapp ui invoke {nav-item-id} -a {appname}
-winapp ui screenshot -a {appname}
-```
-- Verify: content fills the window (no centered floating cards)
-- Verify: all pages from the design spec are present and navigable
-- Verify: controls match the design spec types
-- If something is wrong: fix the code, rebuild (Step 5), re-run (Step 6), re-verify
-
-### Step 9: Report completion
+### Step 6: Report completion
 Only after ALL of these are true:
 - ✅ Build succeeds with zero errors
 - ✅ App launches successfully via winapp run
-- ✅ Screenshots show correct layout matching design spec
+- ✅ Screenshots show correct layout matching design spec in BOTH themes
 - ✅ All pages from design spec are present
 - ✅ Navigation works between pages
+- ✅ Pre-flight checklist all passed
 
 NEVER report "done" if the build is failing or the app doesn't launch.
 
 ## Design Rules
-- Follow the design spec for WHAT to build (pages, controls, layout, navigation pattern)
-- Follow the blueprint for HOW to build (project structure, APIs, packages, MVVM design)
-- Use your own WinUI 3 expertise for implementation details (XAML properties, resource dictionaries)
 - Do NOT use centered floating cards or MaxWidth on main content containers
 - Do NOT create custom ControlTemplates when a standard control exists
-- Apply the brand identity from the design spec (accent color override in App.xaml, logo, app name)
+- Window is just a shell — put all UI in Pages, not MainWindow.xaml
+
+## Reference Files
+Read these for detailed patterns when you encounter specific issues:
+- {PLUGIN_PATH}/skills/winui3/orchestration/references/builder-knowledge-bundle.md
+- {PLUGIN_PATH}/skills/winui3/dev-workflow/SKILL.md
+- {PLUGIN_PATH}/skills/winui3/quality/SKILL.md
+
+## Skills Directory
+All skills at: {PLUGIN_PATH}/skills/winui3/
+If you need guidance not covered above, list and read the relevant skill.
 
 {IF_ITERATION}
 ## Fix Required Issues
 Read the feedback: {WORKSPACE}/{test-report.md OR code-review.md}
-Fix the listed issues. Then rebuild (Step 5), re-run (Step 6), and re-verify (Step 7).
+Fix the listed issues. Then rebuild, re-run, and re-verify.
 Focus on: {SPECIFIC_ISSUES}
 Do NOT add new features or refactor — only fix the reported issues.
 {END_IF_ITERATION}
