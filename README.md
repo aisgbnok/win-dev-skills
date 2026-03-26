@@ -9,7 +9,7 @@ Copilot CLI skills and agents for Windows app development.
 
 This repo contains agents and skills for windows development, focusing on Winui3. 
 
-The work in this repo is in parralel with [WinApp cli](https:\\github.com\microsoft\winappcli) to enable agents to build, run, and see (with UI Automation) without Visual Studio or other heavy dependencies.
+The work in this repo is in parralel with [WinAppCLI](https://github.com/microsoft/winappcli) to enable agents to build, run, and see (with UI Automation) without Visual Studio or other heavy dependencies.
 
 ## What's in this repo
 
