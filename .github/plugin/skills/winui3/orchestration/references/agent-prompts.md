@@ -300,23 +300,83 @@ Read the requirements: {WORKSPACE}/requirements.md
 
 ## Rules
 1. Follow MVVM with CommunityToolkit.Mvvm ([ObservableProperty], [RelayCommand])
-2. Use Microsoft.Extensions.DependencyInjection for DI
-3. ViewModels must NEVER reference UI types. You MUST define service interfaces for ALL of these UI concerns:
-   - INavigationService — page navigation (abstracts Frame.Navigate)
-   - IThemeService — theme switching (abstracts FrameworkElement.RequestedTheme / ElementTheme)
-   - IDispatcherService — UI thread marshaling (abstracts DispatcherQueue.TryEnqueue)
-   - IDialogService — modal dialogs (abstracts ContentDialog — implementation needs XamlRoot from View)
-   - IClipboardService — clipboard access (abstracts Windows.ApplicationModel.DataTransfer.Clipboard)
-   If a ViewModel needs ANY other UI capability, define an interface for it.
-   Do NOT leave this for the Builder to figure out — list every service interface explicitly.
-4. Apply the sample-first rule: for any unfamiliar API, search sample repos before using
-5. Document async/threading considerations for each API
-6. Specify exact NuGet packages with rationale
-7. Model page states with enums, not scattered booleans
-8. When multiple ViewModels share behavior (logging, device refresh, clipboard), define a ViewModelBase class with shared methods
+2. **Minimum viable architecture** — introduce ONLY the complexity that is needed. No speculative patterns.
+3. Apply the sample-first rule: for any unfamiliar API, search sample repos before using
+4. Document async/threading considerations for each API
+5. Specify exact NuGet packages — only ones that are actively needed
+6. No dead code — every class, interface, property, and method must be actively used
+
+## Architecture Philosophy — Minimum Viable Complexity
+
+**The goal is a working app that is easy to understand and modify — NOT an enterprise reference architecture.**
+
+### What to USE (genuinely valuable):
+- `[ObservableProperty]` and `[RelayCommand]` — eliminates boilerplate, worth it always
+- `x:Bind` with correct Mode — type-safe, performant
+- `{ThemeResource}` brushes — required for light/dark mode
+- `AutomationProperties.Name` — required for accessibility
+- MVVM separation: ViewModels handle state and logic, Views handle presentation
+- `async/await` with proper error handling
+
+### What to SKIP (adds complexity without value for most apps):
+
+| Pattern | Why Skip It | Do This Instead |
+|---------|-----------|----------------|
+| **DI container (ServiceCollection)** | For <8 pages, it's ceremony. Pages end up using service locator anyway. | Create services directly: `new SerialPortService()`. Or use a simple `App.Services` static class with properties. |
+| **INavigationService** | Navigation is 1 line: `ContentFrame.Navigate(typeof(Page))` | Handle in MainWindow code-behind |
+| **IDialogService** | ContentDialog needs XamlRoot from the View — abstraction always leaks | Show dialogs from code-behind. ViewModel can raise an event or set a bool that the View responds to. |
+| **IThemeService** | One line: `((FrameworkElement)Content).RequestedTheme = theme` | Static helper or code-behind |
+| **IClipboardService** | 3 lines of code. No reason to abstract. | Direct call: `var dp = new DataPackage(); dp.SetText(text); Clipboard.SetContent(dp);` |
+| **IDispatcherService** | One line: `DispatcherQueue.TryEnqueue(() => ...)` | Pass DispatcherQueue to services that need it, or use a static helper |
+| **WeakReferenceMessenger** | For 2-3 ViewModels, direct events or method calls are clearer | Use only when VMs genuinely shouldn't know about each other |
+| **ViewModelBase** | If only 2 classes share 1 method, inheritance is overkill | Extract shared logic only when 3+ consumers exist |
+| **State enums for everything** | `IsConnected: bool` is clearer than `ConnectionState.Connected` when there are only 2 states | Use enums only for 4+ distinct states with different UI behavior. 2-3 states → use booleans. |
+| **7-folder project structure** | 10 files in 7 folders is hard to navigate | Flat structure until 15+ files. Then organize. |
+
+### How ViewModels Should Access UI-Adjacent Functionality
+
+The rule "ViewModels must not reference UI types" is still correct. But the solution is NOT always "create an interface + DI service." For small apps:
+
+```csharp
+// ✅ SIMPLE: ViewModel raises an event, code-behind handles the UI part
+public partial class MonitorViewModel : ObservableObject
+{
+    // ViewModel exposes an event for "show confirmation needed"
+    public event Func<string, string, Task<bool>>? ConfirmationRequested;
+    
+    [RelayCommand]
+    private async Task EraseFiles()
+    {
+        if (ConfirmationRequested != null)
+        {
+            bool confirmed = await ConfirmationRequested("Erase Files", "This will delete all files. Continue?");
+            if (!confirmed) return;
+        }
+        await _serialPort.SendCommand("erase files");
+    }
+}
+
+// In MonitorPage.xaml.cs:
+ViewModel.ConfirmationRequested += async (title, msg) =>
+{
+    var dialog = new ContentDialog { Title = title, Content = msg, 
+        PrimaryButtonText = "Yes", CloseButtonText = "No", XamlRoot = this.XamlRoot };
+    return await dialog.ShowAsync() == ContentDialogResult.Primary;
+};
+```
+
+This is simpler than IDialogService + DialogService + DI registration + constructor injection. The ViewModel never references UI types. The code-behind is 5 lines. No interface needed.
+
+### When DI IS Justified
+
+Use `ServiceCollection` DI only when:
+- You have services with **real external dependencies** that benefit from lifecycle management (HTTP clients, database connections, hardware interfaces)
+- You are writing **unit tests** that need to mock services
+- You have **8+ pages** and the wiring complexity justifies the infrastructure
+- You have **multiple implementations** of the same interface (e.g., real vs mock serial port)
 
 ## Output Size Guideline
-Keep the blueprint to ~15-20KB. Focus on structure, key APIs, and patterns. If you have deep domain documentation (protocol specs, command references), put them in a separate supplementary file at {WORKSPACE}/protocol-reference.md — the Builder will read it when implementing that feature.
+Keep the blueprint to ~10-15KB. Focus on structure, key APIs, and patterns. If you have deep domain documentation (protocol specs, command references), put them in a separate supplementary file at {WORKSPACE}/protocol-reference.md.
 
 Do NOT re-describe the UI layout — reference the design spec for that. Your job is HOW to build, not WHAT to build.
 

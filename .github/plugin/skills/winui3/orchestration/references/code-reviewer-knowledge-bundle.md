@@ -162,13 +162,22 @@ var result = await httpClient.GetStringAsync(url);
 
 ### Rules
 - Remove all unused `using` statements
-- Remove dead code and commented-out blocks
+- Remove dead code and commented-out blocks — properties, commands, converters, services that are defined but never used
 - No duplicated code blocks (DRY) — extract into shared methods/services
 - Clean build — zero warnings
 - Consistent naming: PascalCase for public members, _camelCase for private fields
 - Error handling on all async operations (try/catch or appropriate error propagation)
 - No empty catch blocks
 - Resource cleanup in `Dispose` or `OnNavigatedFrom`
+- Unsubscribe from events — if `SomeService.Event += handler` exists, there must be a corresponding `-=` path
+- Use `[NotifyPropertyChangedFor]` instead of manual `OnPropertyChanged("PropName")` calls
+
+### Over-Architecture (flag as WARNING)
+- Interface with only one implementation that is never mocked/tested → flag: "Consider removing this interface"
+- Service that is a trivial wrapper (≤5 lines of real logic) registered in DI → flag: "Consider using a static helper or direct call"
+- Properties/commands defined but never bound in XAML → flag: "Dead code — remove or wire up"
+- ViewModels with 5+ responsibilities or 250+ lines → flag: "Too dense — extract service or split"
+- Service locator pattern (`App.Current.Services.GetRequiredService<T>()` in pages) instead of constructor injection → flag: "Use constructor injection or remove DI for this service"
 
 ---
 
@@ -181,6 +190,7 @@ var result = await httpClient.GetStringAsync(url);
 - Accessibility basics covered (AutomationProperties on interactive controls)
 - No security issues
 - No performance anti-patterns
+- No significant dead code
 
 ### NEEDS FIXES — any of these are true:
 - Build warnings or errors
@@ -189,3 +199,4 @@ var result = await httpClient.GetStringAsync(url);
 - UI thread blocking (.Result, .Wait)
 - Hardcoded secrets
 - ViewModel references UI types directly
+- Significant dead code (unused properties, commands, services, converters)

@@ -258,15 +258,37 @@ winapp ui scroll <container-id> -a <appname> --direction down --amount 3
 
 ## 6. MVVM Rules for ViewModels
 
+### Core Principle: Minimum Viable Complexity
+Build only what's needed. No speculative interfaces, no DI wrappers for 3-line operations, no "just in case" abstractions.
+
 ### Banned Imports — NEVER use these in ViewModel files:
-- ❌ `using Microsoft.UI.Xaml;`
-- ❌ `using Microsoft.UI.Xaml.Controls;`
-- ❌ `using Microsoft.UI.Xaml.Media;`
+- ❌ `using Microsoft.UI.Xaml;` / `.Controls;` / `.Media;`
 - ❌ `using Microsoft.UI.Dispatching;`
 - ❌ `using Windows.ApplicationModel.DataTransfer;`
 - ❌ `using Microsoft.UI.Windowing;`
 
-Use service interfaces from the blueprint instead (IThemeService, IDispatcherService, IClipboardService, IDialogService, INavigationService).
+Instead of creating interface+service for trivial UI operations, use:
+- **Dialogs**: ViewModel raises an event → code-behind handles ContentDialog
+- **Clipboard**: Direct call in code-behind, triggered by ViewModel command
+- **Navigation**: MainWindow code-behind handles `Frame.Navigate`
+- **Theme**: Static helper or code-behind
+
+### What NOT to Build
+- ❌ `IClipboardService` / `ILauncherService` / `IThemeService` / `IDispatcherService` — trivial wrappers add files and complexity for zero benefit
+- ❌ `INavigationService` for <5 pages — code-behind is simpler
+- ❌ DI container (`ServiceCollection`) unless you have services with real external dependencies (HTTP, serial ports, databases) or are writing unit tests
+- ❌ `ViewModelBase` unless 3+ ViewModels share the same methods
+- ❌ State enums with only 2 values — use a boolean instead
+- ❌ Properties, commands, or converters that aren't bound in XAML
+
+### What TO Build
+- ✅ `[ObservableProperty]` with partial property syntax
+- ✅ `[RelayCommand]` for button actions (async Task, with try-catch)
+- ✅ `{x:Bind}` with correct Mode for all bindings
+- ✅ `AutomationProperties.Name` on all interactive controls
+- ✅ `{ThemeResource}` brushes — never hardcode colors
+- ✅ Services for real complexity (serial port, HTTP client, device discovery)
+- ✅ Event-based VM→View communication for dialogs and UI-only concerns
 
 ### CommunityToolkit.Mvvm — Partial Properties (NOT Fields)
 ```csharp
@@ -377,9 +399,26 @@ The skills directory is at `{SKILLS_PATH}/` (provided by the orchestrator). Read
 | Handling secrets, user input, permissions | `quality/SKILL.md` (security section) |
 | Writing tests | `testing/SKILL.md` |
 | AOT, trimming, source generators | `aot-sourcegen/SKILL.md` |
-| Looking up APIs, finding samples | `search-docs/SKILL.md` |
+| Looking up APIs, finding samples | Use `microsoft_docs_search` and `microsoft_code_sample_search` MCP tools. Read `microsoft-docs/SKILL.md` for query tips. |
 
 If you're unsure which skill applies, list the skills directory and read the SKILL.md files' frontmatter descriptions.
+
+### API Research — Use MCP Tools First
+
+When you need to look up a WinUI 3 or Windows API, use the Microsoft Learn MCP tools instead of guessing or searching the web:
+
+```
+# Verify a class/method exists
+microsoft_docs_search(query: "AppNotificationManager RegisterAsync Windows App SDK")
+
+# Find a working code sample
+microsoft_code_sample_search(query: "winui3 file picker", language: "csharp")
+
+# Get full API reference page
+microsoft_docs_fetch(url: "https://learn.microsoft.com/en-us/windows/windows-app-sdk/api/winrt/...")
+```
+
+This replaces the old "web search first" approach — MCP tools give you authoritative, up-to-date Microsoft documentation directly.
 
 ---
 

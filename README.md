@@ -10,7 +10,8 @@ Copilot CLI skills and agents for Windows app development.
 - **`.github/plugin/`** — Copilot CLI plugin with agents and skills for Windows development
   - **winapp** agent — App packaging, code signing, Windows SDK, package identity, UI automation (Electron, .NET, C++, Rust, Flutter, Tauri)
   - **winui3** agent — Orchestrates specialist sub-agents to build production-quality WinUI 3 desktop apps. Coordinates an Analyzer → Designer → Design Reviewer → Architect → Builder → Code Reviewer → Tester pipeline with quality gates and iteration loops.
-  - 21 skills organized as thin rule sets with `references/` for detailed patterns, including an `orchestration` skill with knowledge bundles for each specialist agent
+  - 22 skills organized as thin rule sets with `references/` for detailed patterns, including an `orchestration` skill with knowledge bundles for each specialist agent
+  - **Microsoft Learn MCP Server** — built-in access to official Microsoft documentation for API lookups, code samples, and troubleshooting (no auth required)
 - **`scripts/install.ps1` / `scripts/install.cmd`** — User installer (temporary, see below)
 - **`scripts/build-release.ps1`** — Maintainer script to bundle artifacts and publish releases
 
