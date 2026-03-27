@@ -5,6 +5,12 @@ Copilot CLI skills and agents for Windows app development.
 > [!IMPORTANT]
 > :warning: **Note:** The install script and release bundling are **temporary**. WinApp CLI is currently in preview. For public facing skills, the agents will handle tool installation automatically — no script needed, and the plugin will be installable directly from the Copilot CLI.
 
+## What is this
+
+This repo contains agents and skills for windows development, focusing on Winui3. 
+
+The work in this repo is in parralel with [WinAppCLI](https://github.com/microsoft/winappcli) to enable agents to build, run, and see (with UI Automation) without Visual Studio or other heavy dependencies.
+
 ## What's in this repo
 
 - **`.github/plugin/`** — Copilot CLI plugin with agents and skills for Windows development
@@ -23,14 +29,14 @@ Copilot CLI skills and agents for Windows app development.
 4. When prompted, confirm the installation
 
 The installer will:
-- Install **WinApp CLI** as a portable executable (no internet or admin required)
+- Install **WinApp CLI** as a portable executable
 - Install **WinUI 3 project templates** from NuGet.org (requires .NET SDK)
 - Install the **Copilot CLI plugin** with Windows development agents and skills
 
 After installation, open a terminal and run:
 
 ```
-copilot
+copilot --agent winui3
 ```
 
 Then ask something like:
