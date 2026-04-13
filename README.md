@@ -9,14 +9,13 @@ Copilot CLI skills and agents for Windows app development.
 
 This repo contains agents and skills for windows development, focusing on Winui3. 
 
-The work in this repo is in parralel with [WinAppCLI](https://github.com/microsoft/winappcli) to enable agents to build, run, and see (with UI Automation) without Visual Studio or other heavy dependencies.
+The work in this repo is in parallel with [WinAppCLI](https://github.com/microsoft/winappcli) to enable agents to build, run, and see (with UI Automation) without Visual Studio or other heavy dependencies.
 
 ## What's in this repo
 
 - **`.github/plugin/`** — Copilot CLI plugin with agents and skills for Windows development
-  - **winapp** agent — App packaging, code signing, Windows SDK, package identity, UI automation (Electron, .NET, C++, Rust, Flutter, Tauri)
-  - **winui3** agent — Orchestrates specialist sub-agents to build production-quality WinUI 3 desktop apps. Coordinates an Analyzer → Designer → Design Reviewer → Architect → Builder → Code Reviewer → Tester pipeline with quality gates and iteration loops.
-  - 22 skills organized as thin rule sets with `references/` for detailed patterns, including an `orchestration` skill with knowledge bundles for each specialist agent
+  - **winui3** agent - responsible for building winui3 applications with latest tooling and best practices.
+  - 13 skills organized as thin rule sets with `references/` for detailed patterns.
   - **Microsoft Learn MCP Server** — built-in access to official Microsoft documentation for API lookups, code samples, and troubleshooting (no auth required)
 - **`scripts/install.ps1` / `scripts/install.cmd`** — User installer (temporary, see below)
 - **`scripts/build-release.ps1`** — Maintainer script to bundle artifacts and publish releases
@@ -30,7 +29,7 @@ The work in this repo is in parralel with [WinAppCLI](https://github.com/microso
 
 The installer will:
 - Install **WinApp CLI** as a portable executable
-- Install **WinUI 3 project templates** from NuGet.org (requires .NET SDK)
+- Install **WinUI 3 project templates** (requires .NET SDK)
 - Install the **Copilot CLI plugin** with Windows development agents and skills
 
 After installation, open a terminal and run:
