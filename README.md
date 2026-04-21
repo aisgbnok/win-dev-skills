@@ -7,7 +7,7 @@ Copilot CLI skills and agents for Windows app development.
 > 
 > :warning: The install script and release bundling are **temporary**. WinApp CLI is currently in preview. For public facing skills, the agents will handle tool installation automatically — no script needed, and the plugin will be installable directly from the Copilot CLI.
 >
-> **For best results, install VisualStudio with the WinUI workload** - there is a known issue with the Xaml Compiler when used with `dotnet build` and it does not show Xaml errors. This will be fixed in future updates of the WinAppSDK nugets. In the meantime, the skills can use MSBuild to build the apps so the agents get better errors. The agents will automaticly choses MSBuild for building when available on the device and fall back to dotnet build otherwise.
+> **For best results, install VisualStudio with the WinUI workload** - there is a known issue with the Xaml Compiler when used with `dotnet build` and it does not show Xaml errors. This will be fixed in future updates of the WinAppSDK nugets. In the meantime, the skills can use MSBuild to build the apps so the agents get better errors. The agent will automaticly chose MSBuild for building when available on the device and fall back to dotnet build otherwise.
 
 ## What is this
 
@@ -19,10 +19,8 @@ The work in this repo is in parallel with [WinAppCLI](https://github.com/microso
 
 - **`.github/plugin/`** — Copilot CLI plugin with agents and skills for Windows development
   - **winui3** agent - responsible for building winui3 applications with latest tooling and best practices.
-  - 13 skills organized as thin rule sets with `references/` for detailed patterns.
-  - **Microsoft Learn MCP Server** — built-in access to official Microsoft documentation for API lookups, code samples, and troubleshooting (no auth required)
+  -6 skills organized as thin rule sets with `references/` for detailed patterns.
 - **`scripts/install.ps1` / `scripts/install.cmd`** — User installer (temporary, see below)
-- **`scripts/build-release.ps1`** — Maintainer script to bundle artifacts and publish releases
 
 ## Quick start
 
@@ -50,6 +48,4 @@ Build me a WinUI 3 app called TaskFlow
 
 ## Help Us Improve
 
-The orchestration pipeline automatically generates a `RETROSPECTIVE.md` file after each build. It analyzes timing, identifies knowledge gaps, and suggests improvements.
-
-If you'd like to help improve the agents, [open an issue](https://github.com/microsoft/win-dev-skills/issues) with your `RETROSPECTIVE.md` attached. These retrospectives directly drive improvements to the knowledge bundles, agent prompts, and pipeline logic.
+After trying the skills, activate the `/winui3-session-report` skill. It will automaticaly analyze your session - turns, tokens, build patterns, what worked, what didn’t - and produce a `session-report.md` file. Please attach that report when you [open an issue](https://github.com/microsoft/win-dev-skills/issues).
