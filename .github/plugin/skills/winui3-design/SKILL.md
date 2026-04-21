@@ -17,7 +17,7 @@ description: "WinUI 3 UI design and XAML correctness — layout planning, contro
 #### Step 2: Map Requirements to Controls
 **Navigation:** 2-7 sections → `NavigationView`; document tabs → `TabView`; breadcrumb trail → `BreadcrumbBar`; 2-3 modes → `SelectorBar`.
 
-**Data display:** Vertical list → `ListView`; tiles/grid → `GridView` or `ItemsRepeater` + `UniformGridLayout`; hierarchy → `TreeView`; tabular → CommunityToolkit `DataGrid`; master-detail → `ListView` + detail `Grid`.
+**Data display:** Vertical list → `ListView`; tiles/grid → `GridView` or `ItemsRepeater` + `UniformGridLayout`; hierarchy → `TreeView`; tabular → `ListView` with Grid column headers; master-detail → `ListView` + detail `Grid`.
 
 **Input:** Text → `TextBox`; number → `NumberBox`; search → `AutoSuggestBox`; date → `CalendarDatePicker`; boolean → `ToggleSwitch`; pick one from 2-3 → `RadioButtons`; pick one from 4+ → `ComboBox`.
 
@@ -103,9 +103,29 @@ Use `BackgroundSizing="InnerBorderEdge"` on bordered acrylic. `ThemeShadow` requ
 
 #### Data Binding
 - `{x:Bind}` over `{Binding}`, explicit `Mode=OneWay`/`TwoWay`, `x:DataType` on `DataTemplate`
+- **TextBox `x:Bind TwoWay` — always add `UpdateSourceTrigger=PropertyChanged`** so the ViewModel updates on each keystroke instead of waiting for `LostFocus`. Without it, UIA automation (`set-value`) and programmatic changes won't commit to the ViewModel.
+  ```xml
+  <TextBox Text="{x:Bind ViewModel.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+  ```
 - Commands over Click/Tapped handlers (MVVM)
 - `VisualStateManager` for visual property changes, not code-behind
 - No `IValueConverter` — prefer `x:Bind` with functions
+
+**Bool negation and Visibility functions** — define static methods in code-behind:
+```csharp
+// In code-behind (e.g., MainPage.xaml.cs)
+public static Visibility BoolToVisibility(bool value) =>
+    value ? Visibility.Visible : Visibility.Collapsed;
+public static Visibility InvertBoolToVisibility(bool value) =>
+    value ? Visibility.Collapsed : Visibility.Visible;
+public static bool IsNotBusy(bool isLoading) => !isLoading;
+```
+```xml
+<!-- Usage in XAML -->
+Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsLoading), Mode=OneWay}"
+IsEnabled="{x:Bind local:MainPage.IsNotBusy(ViewModel.IsLoading), Mode=OneWay}"
+```
+❌ NEVER use `Converter={x:Null}` — it crashes at runtime.
 
 #### Accessibility
 - `AutomationProperties.Name` on icon-only controls
@@ -115,6 +135,8 @@ Use `BackgroundSizing="InnerBorderEdge"` on bordered acrylic. `ThemeShadow` requ
 
 **Setting attached properties in code-behind** — WinUI attached properties use static methods, NOT object initializer syntax:
 ```csharp
+using Microsoft.UI.Xaml.Automation; // required for AutomationProperties
+
 // ❌ WRONG — object initializer doesn't work for attached properties
 var btn = new Button { AutomationProperties = { AutomationId = "BtnSave" } };
 
