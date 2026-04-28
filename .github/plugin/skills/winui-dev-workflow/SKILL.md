@@ -1,5 +1,5 @@
 ---
-name: winui3-dev-workflow
+name: winui-dev-workflow
 description: "Build and run workflow for WinUI 3 apps — project creation, BuildAndRun.ps1 script, winapp run, error diagnosis, and prerequisites. Use when building, running, or fixing build errors in a WinUI 3 project."
 ---
 
@@ -69,12 +69,13 @@ What it does automatically:
 
 ### Prerequisites
 
-| Requirement | Install |
-|-------------|---------|
-| Windows 10 v1903+ | — |
-| Developer Mode | Settings → For developers → On |
-| .NET SDK 10+ | `winget install Microsoft.DotNet.SDK.10` |
-| winapp CLI | `winget install Microsoft.WinAppCLI` |
+| Requirement | Minimum | Recommended (fresh installs) | Install command |
+|-------------|---------|------------------------------|-----------------|
+| Windows 10 v1903+ | — | — | — |
+| Developer Mode | enabled | enabled | Settings → Advanced → Developer Mode → On |
+| .NET SDK | 8.0 | 10.0 | `winget install Microsoft.DotNet.SDK.10` |
+| winapp CLI | 0.3 | latest | `winget install Microsoft.WinAppCLI` |
+| WinUI templates | any | latest | `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates` |
 
 ### Critical Rules
 

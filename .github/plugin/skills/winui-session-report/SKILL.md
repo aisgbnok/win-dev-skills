@@ -1,5 +1,5 @@
 ---
-name: winui3-session-report
+name: winui-session-report
 description: "Analyze the current or a recent Copilot session and generate a diagnostic report. Use when asking for session feedback, debugging agent behavior, or reviewing what happened during a build session."
 disable-model-invocation: true
 ---

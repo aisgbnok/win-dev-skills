@@ -1,21 +1,21 @@
 ---
-name: winui3-ui-testing
+name: winui-ui-testing
 description: "Automated UI testing for WinUI 3 apps — generate a batch test script, run all tests in one pass, read results. Covers element assertions, interactions, value checking (TextBox, ComboBox, ToggleSwitch), file pickers, flyouts, dialogs, persistence, and accessibility audits."
 ---
 
 ### Approach
 
-Instead of testing the app interactively (screenshot → fix → repeat), **generate a test script up front**, run it once, and read the results. This is faster, cheaper, and more thorough.
+The goal of this skill is to validate UI and app functionality automatically, without manual interaction, by exercising the app's UI elements, verifying their state, and asserting that the app behaves as expected under test conditions.
+
+There are two main approches:
+1. Interactive exploration — manually run the app, use `winapp ui <command>` to explore the UI tree, find AutomationIds, verify element properties, and test functionality interactively. This is useful for discovery, but slow and expensive if repeated for every test iteration.
+2. Scripted batch testing — generate a `ui-tests.ps1` script that exercises all UI elements and asserts expected behavior in one pass. This allows you to run the tests automatically, capture results, and iterate quickly without manually interacting with the app each time.
+
+Unless the user asked for interactive exploration, or you are unfamiliar with the code/app or need to explore the UI tree to discover AutomationIds for hidden or dynamically generated elements (flyouts, dialogs, lazy-loaded content), **prefer scripted batch testing** — it is faster, repeatable, and produces a record of pass/fail results that can be reviewed and acted on.
 
 ### Step 1: Use the Running App
 
-If the app is already running, use its PID. **Do NOT relaunch** — use the PID already captured from the build step.
-
-If the app is not running, launch it detached:
-```powershell
-.\BuildAndRun.ps1 -Detach
-```
-This builds, finds the output path, and launches with `--detach --json`, printing the PID.
+If the app is already running, use its PID. **Do NOT relaunch** — use the PID already captured from the build step. If the app is not running, build and launch it using the guidance in the winui-dev-workflow skill.
 
 ### Step 2: Write the Test Script
 

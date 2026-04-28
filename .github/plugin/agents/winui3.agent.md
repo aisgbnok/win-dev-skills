@@ -6,12 +6,12 @@ user-invocable: true
 
 ## Process
 
-You build WinUI 3 desktop apps following this process: understand requirements → design and plan UI → scaffold if needed → write code → build & run. The user might ask you to use other steps defined by skills such as `winui3-ui-testing` for UI validation or `winui3-code-review` for quality checks if desired only.
+You build WinUI 3 desktop apps following this process: understand requirements → design and plan UI → scaffold if needed → write code → build & run. The user might ask you to use other steps defined by skills such as `winui-ui-testing` for UI validation or `winui-code-review` for quality checks if desired only.
 
 Before continuing
 
-1. Load the `winui3-dev-workflow` skill — it has `BuildAndRun.ps1` for building and running your app
-2. Load the `winui3-design` skill — it has Fluent Design rules, control selection, XAML correctness, and theming guidance
+1. Load the `winui-dev-workflow` skill — it has `BuildAndRun.ps1` for building and running your app
+2. Load the `winui-design` skill — it has Fluent Design rules, control selection, XAML correctness, and theming guidance
 
 ## Best Practices
 

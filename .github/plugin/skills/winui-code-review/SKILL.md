@@ -1,5 +1,5 @@
 ---
-name: winui3-code-review
+name: winui-code-review
 description: "Code quality review for WinUI 3 apps — MVVM compliance, x:Bind correctness, accessibility, theming, security, and performance. Use before committing to catch issues that the compiler and UI tests won't find."
 ---
 
@@ -12,7 +12,7 @@ Run a code review **after the app builds and before committing**. This catches q
 Read through the project's XAML and C# files and check each section below. Also run the static analyzer:
 
 ```powershell
-.\.github\skills\winui3-dev-workflow\check.ps1 .
+.\.github\skills\winui-dev-workflow\check.ps1 .
 ```
 
 This catches WUI007 (nested x:Bind), WUI008 (old MVVM syntax), WUI010 (missing AutomationId), WUI011 (x:Bind without Mode), WUI012 (attached property syntax), and WUI013-015 (removed GenAI APIs) automatically.

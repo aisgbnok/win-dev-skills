@@ -340,7 +340,7 @@ if ($buildErrors | Where-Object { $_.Errors -match 'MSB3073' }) {
     }
 }
 
-$devWorkflowEntry = $skillTimeline | Where-Object { $_.Skill -eq 'winui3-dev-workflow' } | Select-Object -First 1
+$devWorkflowEntry = $skillTimeline | Where-Object { $_.Skill -eq 'winui-dev-workflow' } | Select-Object -First 1
 $firstBuildTurn = ($turns | Where-Object { $_.Category -in 'build-ok', 'build-fix' } | Select-Object -First 1).TurnNum
 if ($devWorkflowEntry -and $rawDotnetBuilds -and $devWorkflowEntry.Turn -gt $firstBuildTurn) {
     $toolingIssues += @{

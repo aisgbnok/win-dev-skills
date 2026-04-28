@@ -3,10 +3,6 @@
 Copilot CLI skills and agents for Windows app development.
 
 > [!IMPORTANT]
-> READ BEFORE USE
-> 
-> :warning: The install script and release bundling are **temporary**. WinApp CLI is currently in preview. For public facing skills, the agents will handle tool installation automatically — no script needed, and the plugin will be installable directly from the Copilot CLI.
->
 > **For best results, install VisualStudio with the WinUI workload** - there is a known issue with the Xaml Compiler when used with `dotnet build` and it does not show Xaml errors. This will be fixed in future updates of the WinAppSDK nugets. In the meantime, the skills can use MSBuild to build the apps so the agents get better errors. The agent will automaticly chose MSBuild for building when available on the device and fall back to dotnet build otherwise.
 
 ## What is this
@@ -21,6 +17,16 @@ The work in this repo is in parallel with [WinAppCLI](https://github.com/microso
   - **winui3** agent - responsible for building winui3 applications with latest tooling and best practices.
   -6 skills organized as thin rule sets with `references/` for detailed patterns.
 - **`scripts/install.ps1` / `scripts/install.cmd`** — User installer (temporary, see below)
+
+## Prerequisites
+
+| Tool | Minimum | Recommended | Install |
+|------|---------|-------------|---------|
+| .NET SDK | 8.0 | 10.0 | `winget install Microsoft.DotNet.SDK.10` |
+| WinApp CLI | 0.3 | latest | `winget install Microsoft.WinAppCLI` |
+| WinUI templates | — | latest | `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates` |
+
+Developer Mode must be enabled in Windows (Settings → System → Advanced → Developer Mode).
 
 ## Quick start
 
@@ -48,4 +54,4 @@ Build me a WinUI 3 app called TaskFlow
 
 ## Help Us Improve
 
-After trying the skills, activate the `/winui3-session-report` skill. It will automaticaly analyze your session - turns, tokens, build patterns, what worked, what didn’t - and produce a `session-report.md` file. Please attach that report when you [open an issue](https://github.com/microsoft/win-dev-skills/issues).
+After trying the skills, activate the `/winui-session-report` skill. It will automaticaly analyze your session - turns, tokens, build patterns, what worked, what didn’t - and produce a `session-report.md` file. Please attach that report when you [open an issue](https://github.com/microsoft/win-dev-skills/issues).
