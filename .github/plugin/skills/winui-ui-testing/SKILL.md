@@ -13,6 +13,10 @@ There are two main approches:
 
 Unless the user asked for interactive exploration, or you are unfamiliar with the code/app or need to explore the UI tree to discover AutomationIds for hidden or dynamically generated elements (flyouts, dialogs, lazy-loaded content), **prefer scripted batch testing** — it is faster, repeatable, and produces a record of pass/fail results that can be reviewed and acted on.
 
+### `winapp ui` Verbs
+
+`status`, `inspect`, `search`, `get-property`, `get-value`, `screenshot`, `invoke`, `click`, `set-value`, `focus`, `scroll`, `scroll-into-view`, `wait-for`, `list-windows`, `get-focused`. Run `winapp ui --cli-schema` for the complete command structure as JSON, or `winapp ui <verb> --help` for any single verb.
+
 ### Step 1: Use the Running App
 
 If the app is already running, use its PID. **Do NOT relaunch** — use the PID already captured from the build step. If the app is not running, build and launch it using the guidance in the winui-dev-workflow skill.
@@ -136,7 +140,7 @@ Write tests for **every requirement** from the user's prompt:
 
 Read `test-results.json` for structured pass/fail. Only fix code if tests fail.
 
-### Step 4: Fix and Rerun (if needed)
+### Step 4: Fix and Rerun (if the user asked for it)
 
 If tests fail:
 1. Read the failure details from `test-results.json`
@@ -174,6 +178,9 @@ Use `wait-for --value` as the primary assertion — it uses a smart fallback cha
 | Dialog appeared | `winapp ui list-windows -a PID --json` (check window count) |
 | Right-click menu | `winapp ui click "Id" -a PID --right` then `wait-for` menu item |
 | Read raw property | `winapp ui get-property "Id" -a PID -p IsEnabled --json` |
+| Read current value (no wait) | `winapp ui get-value "Id" -a PID` — use when assigning to a variable for chained logic; otherwise prefer `wait-for --value` |
+| Scroll item into view | `winapp ui scroll-into-view "Id" -a PID` — call before `wait-for` on virtualized ListView/repeater items below the fold |
+| Set keyboard focus | `winapp ui focus "Id" -a PID` — cleaner than clicking another control to trigger a TextBox `LostFocus` commit |
 
 ### Testing File Pickers
 

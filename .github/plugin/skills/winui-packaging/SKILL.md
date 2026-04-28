@@ -18,6 +18,8 @@ description: "MSIX packaging, code signing, and distribution for WinUI 3 apps â€
 ### End-to-End Workflow
 
 #### Step 1: Build for Release
+Use the BuildAndRun.ps1 script from the `winui-dev-workflow` skill to build your app in Release configuration without launching it:
+
 ```powershell
 .\BuildAndRun.ps1 /p:Configuration=Release -SkipRun
 ```
