@@ -7,7 +7,7 @@ description: "Automated UI testing for WinUI 3 apps — generate a batch test sc
 
 The goal of this skill is to validate UI and app functionality automatically, without manual interaction, by exercising the app's UI elements, verifying their state, and asserting that the app behaves as expected under test conditions.
 
-There are two main approches:
+There are two main approaches:
 1. Interactive exploration — manually run the app, use `winapp ui <command>` to explore the UI tree, find AutomationIds, verify element properties, and test functionality interactively. This is useful for discovery, but slow and expensive if repeated for every test iteration.
 2. Scripted batch testing — generate a `ui-tests.ps1` script that exercises all UI elements and asserts expected behavior in one pass. This allows you to run the tests automatically, capture results, and iterate quickly without manually interacting with the app each time.
 
