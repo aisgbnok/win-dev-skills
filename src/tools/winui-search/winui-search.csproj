@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>winui-search</AssemblyName>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\gallery-scenarios.json" LogicalName="gallery-scenarios.json" />
+    <EmbeddedResource Include="Data\toolkit-scenarios.json" LogicalName="toolkit-scenarios.json" />
+    <EmbeddedResource Include="Data\core-patterns.json" LogicalName="core-patterns.json" />
+    <EmbeddedResource Include="Data\gallery-tags.json" LogicalName="gallery-tags.json" />
+    <EmbeddedResource Include="Data\toolkit-tags.json" LogicalName="toolkit-tags.json" />
+  </ItemGroup>
+</Project>
