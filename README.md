@@ -1,9 +1,39 @@
-# win-dev-skills — Copilot CLI agents and skills for Windows app development
+# Agents and skills for Windows app development
 
-A [Copilot CLI](https://github.com/github/gh-copilot) plugin for building native Windows apps with **WinUI 3** and the **Windows App SDK**. Ships **one agent**, **seven skills**, and a small set of **supporting tools** that together cover the end-to-end inner loop: scaffold → design → build → run → test → package → ship.
+A [Copilot CLI](https://github.com/github/gh-copilot) plugin for building native Windows apps with **WinUI 3** and the **Windows App SDK** to cover the end-to-end inner loop: scaffold → design → build → run → test → package → ship.
 
 > [!WARNING]
 > **🚧 Preview · v0.x — expect breaking changes.** Skill names, on-disk layout, agent configuration, analyzer rule IDs, and CLI tool surfaces are all subject to change without notice. There is no SemVer commitment until v1.0. Pin to a specific commit if you need stability today. Outputs are suggestions, not authoritative answers — review them before committing or shipping anything they produce.
+
+## Install
+
+### Prerequisites
+
+| Tool | Minimum | Recommended | Install |
+|---|---|---|---|
+| .NET SDK | 8.0 | 10.0 | `winget install Microsoft.DotNet.SDK.10` |
+| WinApp CLI | 0.3 | latest | `winget install Microsoft.WinAppCLI` |
+| WinUI 3 templates | — | latest | `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates` |
+| Copilot CLI | latest | latest | `winget install GitHub.Copilot` |
+| Visual Studio (WinUI workload) | — | 2022 17.10+ | recommended for the XAML-diagnostics workaround |
+
+Developer Mode must be enabled in Windows (Settings → System → Advanced → Developer Mode).
+
+### Install the plugin
+
+```powershell
+# Add the win-dev-skills marketplace, then install the winui plugin from it.
+copilot plugin marketplace add microsoft/win-dev-skills
+copilot plugin install winui@win-dev-skills
+```
+
+> The marketplace registration is a one-time step. After that, `copilot plugin install winui@win-dev-skills` is all anyone needs to add or upgrade the plugin.
+
+### Quick start
+
+```sh
+copilot --agent winui:winui-dev -p "Build me a WinUI 3 markdown editor with live preview and a custom title bar"
+```
 
 > [!IMPORTANT]
 > **For best results, install Visual Studio with the WinUI workload.** There is a known XAML-compiler issue under `dotnet build` where a malformed XAML file produces no useful diagnostic — the build just fails with no indication of what's wrong in which `.xaml`. Agents that hit this thrash through unrelated guesses. The `winui-dev-workflow` skill works around it via a small [`BuildAndRun.ps1`](plugins/winui/skills/winui-dev-workflow/BuildAndRun.ps1) helper that prefers MSBuild when it's available on the machine and falls back to `dotnet build` otherwise. **This workaround is explicitly temporary** and goes away when the next Windows App SDK release fixes the underlying compiler.
@@ -46,38 +76,6 @@ Each skill is a focused, self-contained playbook. The agent loads `winui-design`
 | **`winui-packaging`** | MSIX packaging, code signing, and distribution — release builds, certificate generation (`winapp cert generate`), trust, signing (`winapp sign`), self-contained deployment, GitHub Actions CI/CD, and Microsoft Store submission. |
 | **`winui-wpf-migration`** | WPF → WinUI 3 migration — namespace replacement, control mapping (`DataGrid` → `ListView`, `WrapPanel` → `ItemsRepeater`, `TabControl` → `TabView`), `Dispatcher` → `DispatcherQueue`, `System.Drawing` → `BitmapImage`, MVVM conversion to CommunityToolkit.Mvvm, `DynamicResource` → `ThemeResource`. |
 | **`winui-session-report`** | Diagnostic report on the current or a recent Copilot session. Use when filing a bug, debugging agent behaviour, or reviewing what happened during a build session. |
-
-## Install
-
-### Prerequisites
-
-| Tool | Minimum | Recommended | Install |
-|---|---|---|---|
-| .NET SDK | 8.0 | 10.0 | `winget install Microsoft.DotNet.SDK.10` |
-| WinApp CLI | 0.3 | latest | `winget install Microsoft.WinAppCLI` |
-| WinUI 3 templates | — | latest | `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates` |
-| Copilot CLI | latest | latest | `winget install GitHub.Copilot` |
-| Visual Studio (WinUI workload) | — | 2022 17.10+ | recommended for the XAML-diagnostics workaround |
-
-Developer Mode must be enabled in Windows (Settings → System → Advanced → Developer Mode).
-
-### Install the plugin
-
-```powershell
-# Add the win-dev-skills marketplace, then install the winui plugin from it.
-copilot plugin marketplace add microsoft/win-dev-skills
-copilot plugin install winui@win-dev-skills
-```
-
-> The marketplace registration is a one-time step. After that, `copilot plugin install winui@win-dev-skills` is all anyone needs to add or upgrade the plugin.
-
-### Quick start
-
-```sh
-copilot --agent winui:winui-dev -p "Build me a WinUI 3 markdown editor with live preview and a custom title bar"
-```
-
-Then ask Copilot CLI for the WinUI 3 app you've been meaning to build, and tell us how it goes.
 
 ## The tools we lean on
 
