@@ -1,13 +1,13 @@
 # Agents and skills for Windows app development
 
-A [Copilot CLI](https://github.com/github/gh-copilot) plugin for building native Windows apps with **WinUI 3** and the **Windows App SDK** to cover the end-to-end inner loop: scaffold → design → build → run → test → package → ship.
+A Github Copilot and Claude Code plugin for building native Windows apps with **WinUI 3** and the **Windows App SDK** to cover the end-to-end inner loop: scaffold → design → build → run → test → package → ship.
 
 > [!WARNING]
 > **🚧 Preview · v0.x — expect breaking changes.** Skill names, on-disk layout, agent configuration, analyzer rule IDs, and CLI tool surfaces are all subject to change without notice. There is no SemVer commitment until v1.0. Pin to a specific commit if you need stability today. Outputs are suggestions, not authoritative answers — review them before committing or shipping anything they produce.
 
 ## Install
 
-Make sure you have **GitHub Copilot CLI** first (`winget install GitHub.Copilot`). Then pick one of the two paths below.
+The plugin requires **GitHub Copilot** (`winget install GitHub.Copilot`) or **Claude Code** installed.
 
 ### Option A — Just ask Copilot to do it
 
@@ -28,14 +28,19 @@ Install the Copilot CLI plugin "winui" from microsoft/win-dev-skills, then set u
 
 ### Option B — Install the plugin yourself, then ask the agent to set up the rest
 
-If you'd rather run the plugin commands by hand:
+If you'd rather run the plugin commands by hand, the same commands work for **GitHub Copilot CLI** and **Claude Code** — just swap `copilot` for `claude` (or vice versa):
 
 ```powershell
 copilot plugin marketplace add microsoft/win-dev-skills
 copilot plugin install winui@win-dev-skills
 ```
 
-Then start a new session and run the winui-setup skill with `/winui-setup`.
+```powershell
+claude plugin marketplace add microsoft/win-dev-skills
+claude plugin install winui@win-dev-skills
+```
+
+Then start a new session and run the `winui-setup` skill with `/winui-setup`.
 
 Once setup is done, try a real task:
 
@@ -43,11 +48,14 @@ Once setup is done, try a real task:
 copilot --agent winui:winui-dev -p "Build me a WinUI 3 markdown editor with live preview and a custom title bar"
 ```
 
+```sh
+claude --agent winui:winui-dev -p "Build me a WinUI 3 markdown editor with live preview and a custom title bar"
+```
+
 ### What gets installed
 
 | Tool | Minimum | Recommended | Install command |
 |---|---|---|---|
-| GitHub Copilot CLI | latest | latest | `winget install GitHub.Copilot` |
 | .NET SDK | 8.0 | 10.0 | `winget install Microsoft.DotNet.SDK.10` |
 | WinApp CLI | 0.3 | latest | `winget install Microsoft.WinAppCLI` |
 | WinUI 3 templates | — | latest | `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates` |
