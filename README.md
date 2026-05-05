@@ -20,11 +20,10 @@ Install the Copilot CLI plugin "winui" from microsoft/win-dev-skills, then set u
 2. Run: copilot plugin install winui@win-dev-skills
 3. Make sure these prerequisites are present (check first; .NET only installs if missing, but WinApp CLI and templates always upgrade to latest):
    - .NET SDK >= 8.0 (run `dotnet --list-sdks`; if none >= 8.0, `winget install --id Microsoft.DotNet.SDK.10 --exact --silent --accept-package-agreements --accept-source-agreements`)
-   - WinApp CLI: must be >= 0.3 (parse `winapp --version`); if missing or older, `winget install --id Microsoft.WinAppCLI --exact --silent --accept-package-agreements --accept-source-agreements`. THEN regardless run `winget upgrade --id Microsoft.WinAppCLI --exact --silent --accept-package-agreements --accept-source-agreements` to get the latest.
+   - WinApp CLI: must be >= 0.3 (parse `winapp --version`); if missing or older, `winget install --id Microsoft.WinAppCLI`. THEN regardless run `winget upgrade --id Microsoft.WinAppCLI` to get the latest.
    - WinUI 3 templates: always run `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates` (after refreshing $env:Path) — it upgrades in place if already installed.
    - Developer Mode (DWORD HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock\AllowDevelopmentWithoutDevLicense == 1) — ASK ME first before triggering UAC; if I decline, just print the elevated command for me to run later.
-4. Print a short summary of what was installed vs already present, then tell me to start a new Copilot CLI session and try:
-   copilot --agent winui:winui-dev -p "Build me a WinUI 3 markdown editor with live preview and a custom title bar"
+4. Print a short summary of what was installed vs already present, then tell me to start a new Copilot CLI, activate the "winui-dev" agent, and to ask it to build an app.
 ```
 
 ### Option B — Install the plugin yourself, then ask the agent to set up the rest
@@ -43,8 +42,6 @@ Once setup is done, try a real task:
 ```sh
 copilot --agent winui:winui-dev -p "Build me a WinUI 3 markdown editor with live preview and a custom title bar"
 ```
-
-The marketplace registration is one-time. After that, `copilot plugin install winui@win-dev-skills` is all anyone needs to add or upgrade the plugin. The agent will also load `winui-setup` on its own later if it ever hits a missing tool.
 
 ### What gets installed
 
@@ -143,15 +140,6 @@ Per-tool READMEs cover what they do and how to consume them in more detail:
 * [`src/tools/winui3-analyzer/README.md`](src/tools/winui3-analyzer/README.md) — analyzer + rule catalog
 * [`src/tools/winmd-cli/README.md`](src/tools/winmd-cli/README.md) — `winmd` CLI usage
 * [`src/tools/winui-search/README.md`](src/tools/winui-search/README.md) — `winui-search` CLI usage
-
-## Network access
-
-Most skills run fully offline once installed. Two helpers in `winui-search` reach out to GitHub on demand to keep their data fresh:
-
-* `GalleryFetcher` queries [`microsoft/WinUI-Gallery`](https://github.com/microsoft/WinUI-Gallery) for control scenarios.
-* `ToolkitFetcher` queries [`CommunityToolkit/Windows`](https://github.com/CommunityToolkit/Windows) for toolkit samples.
-
-Both repos are owned by the same Microsoft / Windows Community Toolkit teams that ship this repo. Requests use anonymous, unauthenticated GitHub REST calls; no telemetry, no user data, and no credentials leave your machine. If you operate in an air-gapped environment, the embedded `Data\*.json` snapshots are used as a fallback.
 
 ## Beyond Copilot CLI
 
