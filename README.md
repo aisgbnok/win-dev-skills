@@ -29,7 +29,7 @@ scripts/               Helper scripts (see scripts/build-tools.ps1)
 docs/                  ROADMAP and supplementary documentation
 ```
 
-### The agent: `winui3`
+### The agent: `winui-dev`
 
 A focused agent for WinUI 3 / Windows App SDK / XAML / C# work. Use it for new apps, adding features, converting from WPF/Electron/web, or fixing bugs. It pulls in the skills below as needed.
 
