@@ -77,6 +77,8 @@ What it does automatically:
 | winapp CLI | 0.3 | latest | `winget install Microsoft.WinAppCLI` |
 | WinUI templates | any | latest | `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates` |
 
+If any of these are missing when you try to access them — `winapp` or `dotnet` not recognized, the WinUI templates aren't installed, Developer Mode is off — **do not try to work around it**. Load the `winui-setup` skill, run it to install or enable what's missing, then retry the failed command. The user can also invoke `winui-setup` directly to set up a fresh machine. Don't run setup by default, but only if you try to use something and you get a failure indicating it's missing.
+
 ### Critical Rules
 
 - ❌ NEVER run the packaged .exe directly — always use `winapp run` or `BuildAndRun.ps1`
