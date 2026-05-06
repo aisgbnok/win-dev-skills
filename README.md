@@ -86,7 +86,7 @@ plugins/winui/         Copilot CLI plugin manifest + agent + skill files
 src/tools/             Source for the in-repo tools shipped with the skills
   winmd-cli/           Native-AOT WinRT/.NET metadata indexer (winmd.exe)
   winui-search/        Native-AOT search over WinUI Gallery + Toolkit (winui-search.exe)
-  winui3-analyzer/     Microsoft.WindowsAppSDK.Analyzers Roslyn analyzer
+  winui-analyzer/      Microsoft.WindowsAppSDK.Analyzers Roslyn analyzer
 scripts/               Helper scripts (see scripts/build-tools.ps1)
 docs/                  ROADMAP and supplementary documentation
 ```
@@ -125,7 +125,7 @@ Several skills ship helper binaries and PowerShell scripts that run under your u
 
 | Artifact | Source | What it does | Long-term plan |
 |---|---|---|---|
-| **`Microsoft.WindowsAppSDK.Analyzers.dll`** (Roslyn analyzer) | [`src/tools/winui3-analyzer/`](src/tools/winui3-analyzer/) | Catches common WinUI 3 / WinAppSDK pitfalls at build time: UWP namespace leaks, `Window.Current`, `CoreDispatcher`, `WebView2` without `EnsureCoreWebView2Async`, raw `TabView` content, attached-property syntax bugs, removed ONNX GenAI APIs, the old field-backed `[ObservableProperty]` pattern, and more. Every rule ships at `Warning` severity (no `Error`s) and includes a `helpLinkUri`. Verified against source on every PR by the `analyzer-provenance` CI job. | Publish as the `Microsoft.WindowsAppSDK.Analyzers` NuGet package; skill stops shipping the prebuilt DLL and projects pick it up via `<PackageReference>`. |
+| **`Microsoft.WindowsAppSDK.Analyzers.dll`** (Roslyn analyzer) | [`src/tools/winui-analyzer/`](src/tools/winui-analyzer/) | Catches common WinUI 3 / WinAppSDK pitfalls at build time: UWP namespace leaks, `Window.Current`, `CoreDispatcher`, `WebView2` without `EnsureCoreWebView2Async`, raw `TabView` content, attached-property syntax bugs, removed ONNX GenAI APIs, the old field-backed `[ObservableProperty]` pattern, and more. Every rule ships at `Warning` severity (no `Error`s) and includes a `helpLinkUri`. Verified against source on every PR by the `analyzer-provenance` CI job. | Publish as the `Microsoft.WindowsAppSDK.Analyzers` NuGet package; skill stops shipping the prebuilt DLL and projects pick it up via `<PackageReference>`. |
 | **`winmd.exe`** (winmd-cli) | [`src/tools/winmd-cli/`](src/tools/winmd-cli/) | Native-AOT WinRT/.NET metadata indexer. The agent uses it to verify an API actually exists and has the signature it thinks it does — *before* writing code that won't compile. Reads `.winmd` and managed `.dll` metadata from NuGet, the Windows SDK, and WinAppSDK and returns the same XML doc text Visual Studio IntelliSense uses. | Publish as a `dotnet tool` on NuGet, or fold relevant subcommands into [`winappcli`](https://github.com/microsoft/winappcli). |
 | **`winui-search.exe`** (winui-search) | [`src/tools/winui-search/`](src/tools/winui-search/) | Native-AOT BM25 search over [WinUI Gallery](https://github.com/microsoft/WinUI-Gallery) and [CommunityToolkit/Windows](https://github.com/CommunityToolkit/Windows) scenarios. Lets the agent see real shipping samples for a control before writing a single line of XAML. Embedded JSON snapshots ship offline; live refresh via `winui-search update`. **Distributed today as a prebuilt unsigned exe inside the `winui-design` skill payload**, verified on every PR by the `winui-search-provenance` CI job. | Same as `winmd-cli` — `dotnet tool`, fold into `winappcli`, or expose over a small MCP server. |
 | **`BuildAndRun.ps1`** | [`plugins/winui/skills/winui-dev-workflow/BuildAndRun.ps1`](plugins/winui/skills/winui-dev-workflow/BuildAndRun.ps1) | Picks MSBuild over `dotnet build` to work around the XAML-compiler diagnostic gap called out above. After a successful build it hands off to `winapp run`. | **Removed entirely once the next Windows App SDK release fixes the XAML compiler under `dotnet build`** — the skills will switch to `dotnet build` / `dotnet run` directly. |
@@ -145,7 +145,7 @@ If any of this is a deal-breaker for your environment, please [open an issue](ht
 
 Per-tool READMEs cover what they do and how to consume them in more detail:
 
-* [`src/tools/winui3-analyzer/README.md`](src/tools/winui3-analyzer/README.md) — analyzer + rule catalog
+* [`src/tools/winui-analyzer/README.md`](src/tools/winui-analyzer/README.md) — analyzer + rule catalog
 * [`src/tools/winmd-cli/README.md`](src/tools/winmd-cli/README.md) — `winmd` CLI usage
 * [`src/tools/winui-search/README.md`](src/tools/winui-search/README.md) — `winui-search` CLI usage
 

@@ -14,7 +14,7 @@ now this directory.
 ## Layout
 
 ```
-src/tools/winui3-analyzer/
+src/tools/winui-analyzer/
 ├── Microsoft.WindowsAppSDK.Analyzers/         # the analyzer assembly (netstandard2.0)
 │   ├── DiagnosticIds.cs / DiagnosticCategories.cs / HelpLinks.cs
 │   ├── ProjectContext.cs                      # UWP-vs-greenfield project gate
@@ -54,12 +54,12 @@ migration table from the older `WUIxxx` 3-digit scheme.
 Requires the .NET 10 SDK (a `global.json` in this directory pins to 10.0.x).
 
 ```powershell
-# From this directory (src/tools/winui3-analyzer/)
+# From this directory (src/tools/winui-analyzer/)
 dotnet build Microsoft.WindowsAppSDK.Analyzers.slnx -c Release
 dotnet test  Microsoft.WindowsAppSDK.Analyzers.slnx -c Release
 
 # Or, from the repo root
-dotnet build src/tools/winui3-analyzer/Microsoft.WindowsAppSDK.Analyzers.slnx -c Release
+dotnet build src/tools/winui-analyzer/Microsoft.WindowsAppSDK.Analyzers.slnx -c Release
 ```
 
 The build emits `Microsoft.WindowsAppSDK.Analyzers.dll` under

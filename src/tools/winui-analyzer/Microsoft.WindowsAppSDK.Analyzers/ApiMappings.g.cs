@@ -70,8 +70,8 @@ internal static class ApiMappings
         // ─── Pickers / dialogs ────────────────────────────────────────────────
         // Note: supported but require IInitializeWithWindow — detected as a separate
         // rule (WUI0xxx range) rather than a no-equiv mapping.
-        new ApiMapping("Windows.Storage.Pickers.FileOpenPicker",           "Microsoft.UI.Xaml + IInitializeWithWindow", "guides/winui3#messagedialog-and-pickers"),
-        new ApiMapping("Windows.UI.Popups.MessageDialog",                  "Microsoft.UI.Xaml + IInitializeWithWindow", "guides/winui3#messagedialog-and-pickers"),
+        new ApiMapping("Windows.Storage.Pickers.FileOpenPicker",           "Microsoft.UI.Xaml + IInitializeWithWindow", "guides/winui#messagedialog-and-pickers"),
+        new ApiMapping("Windows.UI.Popups.MessageDialog",                  "Microsoft.UI.Xaml + IInitializeWithWindow", "guides/winui#messagedialog-and-pickers"),
 
         // ─── Authentication ───────────────────────────────────────────────────
         new ApiMapping("Windows.Security.Authentication.Web.WebAuthenticationBroker",

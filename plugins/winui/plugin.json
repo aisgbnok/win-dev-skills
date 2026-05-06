@@ -65,6 +65,7 @@
     "signing",
     "certificate",
     "distribution",
+    "winui",
     "winui3",
     "xaml"
   ],
