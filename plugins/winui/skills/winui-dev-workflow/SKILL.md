@@ -77,7 +77,7 @@ What it does automatically:
 | winapp CLI | 0.3 | latest | `winget install Microsoft.WinAppCLI` |
 | WinUI templates | any | latest | `dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates` |
 
-If any of these are missing when you try to access them — `winapp` or `dotnet` not recognized, the WinUI templates aren't installed, Developer Mode is off — **do not try to work around it**. Load the `winui-setup` skill, run it to install or enable what's missing, then retry the failed command. The user can also invoke `winui-setup` directly to set up a fresh machine. Don't run setup by default, but only if you try to use something and you get a failure indicating it's missing.
+If any of these are missing when you try to access them — `winapp` or `dotnet` not recognized, the WinUI templates aren't installed, Developer Mode is off — **do not try to install them yourself and do not try to work around it**. Stop and tell the user the prerequisite is missing and ask them to run `/winui-setup` (a user-invoked skill that installs and verifies everything). Once they've finished, retry the failed command.
 
 ### Critical Rules
 
