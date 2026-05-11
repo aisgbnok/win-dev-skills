@@ -88,7 +88,6 @@ src/tools/             Source for the in-repo tools shipped with the skills
   winui-search/        Native-AOT search over WinUI Gallery + Toolkit (winui-search.exe)
   winui-analyzer/      Microsoft.WindowsAppSDK.Analyzers Roslyn analyzer
 scripts/               Helper scripts (see scripts/build-tools.ps1)
-docs/                  ROADMAP and supplementary documentation
 ```
 
 ### The agent: `winui-dev`
