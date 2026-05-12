@@ -7,7 +7,9 @@ A Github Copilot and Claude Code plugin for building native Windows apps with **
 
 ## Install
 
-The plugin requires **GitHub Copilot** (`winget install GitHub.Copilot`) or **Claude Code** installed.
+The plugin requires **GitHub Copilot** (`winget install GitHub.Copilot`) or **Claude Code** installed. 
+
+**Git** (`winget install Git.Git`) is required for installing pluggins.
 
 ### Option A — Just ask Copilot to do it
 
