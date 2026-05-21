@@ -16,7 +16,7 @@ resources:
     ref: refs/tags/release
 
 extends:
-  template: v1/1ES.Unofficial.PipelineTemplate.yml@1esPipelines
+  template: v1/1ES.Official.PipelineTemplate.yml@1esPipelines
   parameters:
     # SDL/compliance (PoliCheck, CredScan, Roslyn, BinSkim, etc.) is provided
     # by the 1ES template. Source analysis runs on this pool.
