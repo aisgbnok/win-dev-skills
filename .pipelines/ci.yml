@@ -40,4 +40,9 @@ extends:
             displayName: Setup .NET 10
             inputs:
               version: 10.0.x
+          # The 1ES pool blocks public api.nuget.org. Swap in a nuget.config
+          # that points at the internal pde-oss_Internal upstream mirror feed.
+          - script: move /Y $(Build.SourcesDirectory)\.pipelines\release-nuget.config $(Build.SourcesDirectory)\nuget.config
+            displayName: Use internal NuGet feed
+          - task: NuGetAuthenticate@1
           - template: ./.pipelines/templates/build.yaml@self
