@@ -21,6 +21,8 @@ extends:
     # SDL/compliance (PoliCheck, CredScan, Roslyn, BinSkim, etc.) is provided
     # by the 1ES template. Source analysis runs on this pool.
     sdl:
+      policheck:
+        enabled: true
       sourceAnalysisPool:
         name: Azure-Pipelines-1ESPT-ExDShared
         image: windows-latest
