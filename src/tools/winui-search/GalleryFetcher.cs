@@ -698,7 +698,7 @@ internal static partial class GalleryFetcher
     // Match any XAML attribute whose value looks like `Foo_Bar` (WinUI Gallery's
     // universal event-handler naming convention: `BasicGridView_ItemClick`,
     // `OpenFileButton_Click`, etc.). Catches every ItemClick/Invoked/Drop/Pointer*/
-    // Refresh*/etc. event without needing a hand-curated event-name whitelist.
+    // Refresh*/etc. event without needing a hand-curated event-name allowlist.
     [GeneratedRegex(@"=""([A-Za-z][\w]*_[A-Za-z]\w*)""")]
     private static partial Regex EventHandlerRegex();
 

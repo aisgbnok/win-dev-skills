@@ -785,7 +785,7 @@ internal static partial class ToolkitFetcher
             name = name[bare.Length..];
         // If nothing distinctive remains, call it "Basic usage" (don't echo the control name).
         if (string.IsNullOrEmpty(name)) return "Basic usage";
-        // Insert spaces before capitals for readability
+        // Insert spaces before uppercase letters for readability
         name = Regex.Replace(name, @"(?<=[a-z])(?=[A-Z])", " ");
         return name.Trim();
     }
