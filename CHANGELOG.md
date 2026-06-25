@@ -24,12 +24,15 @@ The `version-bump` and `changelog-entry` CI jobs enforce this.
 ### Added
 
 ### Changed
+## [0.4.0] — 2026-06-25
 
-### Fixed
+### Added
 
-### Removed
+- OpenClaw support: the `winui` plugin now ships a native OpenClaw manifest
+  (`openclaw.plugin.json`) and `package.json` entry point so all eight skills
+  load in OpenClaw (`Format: openclaw`). README documents the marketplace and
+  local-clone install routes.
 
-### Deprecated
 
 ## [0.3.1] — 2026-05-19
 
@@ -63,3 +66,4 @@ release process was introduced. Future releases will list per-PR changes here.
   against source drift.
 - Marketplace manifest under `.github/plugin/marketplace.json` and Claude Code
   marketplace manifest under `.claude-plugin/marketplace.json`.
+
